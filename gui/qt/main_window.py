@@ -476,13 +476,9 @@ class ElectrumWindow(QMainWindow):
     def create_history_menu(self, position):
         self.history_list.selectedIndexes()
         item = self.history_list.currentItem()
-        be = self.config.get('block_explorer', 'explorer.litecoin.net')
-        if be == 'explorer.litecoin.net':
-            block_explorer = 'http://explorer.litecoin.net/tx/'
-        elif be == 'block-explorer.com':
-            block_explorer = 'http://block-explorer.com/tx/'
-        elif be == 'Blockr.io':
-            block_explorer = 'https://ltc.blockr.io/tx/info/'
+        be = self.config.get('block_explorer', 'explorer.execoin.net')
+        if be == 'explorer.execoin.net':
+            block_explorer = 'http://explorer.execoin.net/tx/'
         if not item: return
         tx_hash = str(item.data(0, Qt.UserRole).toString())
         if not tx_hash: return
@@ -2214,12 +2210,12 @@ class ElectrumWindow(QMainWindow):
         grid.addWidget(HelpButton(_('Using change addresses makes it more difficult for other people to track your transactions.')+' '), 4, 2)
         if not self.config.is_modifiable('use_change'): usechange_cb.setEnabled(False)
 
-        block_explorers = ['explorer.litecoin.net', 'block-explorer.com', 'Blockr.io']
+        block_explorers = ['explorer.execoin.net']
         block_ex_label = QLabel(_('Online Block Explorer') + ':')
         grid.addWidget(block_ex_label, 5, 0)
         block_ex_combo = QComboBox()
         block_ex_combo.addItems(block_explorers)
-        block_ex_combo.setCurrentIndex(block_explorers.index(self.config.get('block_explorer', 'explorer.litecoin.net')))
+        block_ex_combo.setCurrentIndex(block_explorers.index(self.config.get('block_explorer', 'explorer.execoin.net')))
         grid.addWidget(block_ex_combo, 5, 1)
         grid.addWidget(HelpButton(_('Choose which online block explorer to use for functions that open a web browser')+' '), 5, 2)
 
