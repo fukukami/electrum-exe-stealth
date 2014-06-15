@@ -43,7 +43,12 @@ class Blockchain(threading.Thread):
         self.lock = threading.Lock()
         self.local_height = 0
         self.running = False
-        self.headers_url = 'http://192.99.168.223/blockchain_headers'
+        self.headers_urls = [
+            "electrum1.execoin.net",
+            "electrum2.execoin.net",
+            "electrum.execoin.info",
+            "electrum.execoin.org",
+        ]
         self.set_local_height()
         self.queue = Queue.Queue()
 
@@ -210,16 +215,22 @@ class Blockchain(threading.Thread):
         filename = self.path()
         if os.path.exists(filename):
             return
-
-        try:
-            import urllib, socket
-            socket.setdefaulttimeout(30)
-            print_error("downloading ", self.headers_url )
-            urllib.urlretrieve(self.headers_url, filename)
-            print_error("done.")
-        except Exception:
-            print_error( "download failed. creating file", filename )
-            open(filename,'wb+').close()
+        loaded_headers = False
+        for header_url in self.headers_urls:
+            try:
+                import urllib, socket
+                socket.setdefaulttimeout(30)
+                print_error("downloading ", header_url )
+                urllib.urlretrieve(header_url, filename)
+                print_error("done.")
+                loaded_headers = True
+                break
+            except Exception:
+                print_error("download from {} failed. trying next source".format(header_url))
+                continue
+        if not loaded_headers:
+            print_error("trusted headers download failed. creating file {}".format(filename))
+            open(filename, 'wb+').close()
 
     def save_chunk(self, index, chunk):
         filename = self.path()
