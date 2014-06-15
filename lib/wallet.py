@@ -722,7 +722,6 @@ class Abstract_Wallet:
 
 
     def receive_tx_callback(self, tx_hash, tx, tx_height):
-
         with self.transaction_lock:
             self.add_extra_addresses(tx)
             if not self.check_new_tx(tx_hash, tx):
@@ -744,7 +743,6 @@ class Abstract_Wallet:
         self.storage.put('transactions', tx, True)
 
     def receive_history_callback(self, addr, hist):
-
         if not self.check_new_history(addr, hist):
             raise Exception("error: received history for %s is not consistent with known transactions"%addr)
             
