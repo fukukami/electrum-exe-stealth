@@ -7,7 +7,10 @@ from blockchain import Blockchain
 DEFAULT_PORTS = {'t':'50011', 's':'50012', 'h':'8181', 'g':'8282'}
 
 DEFAULT_SERVERS = {
-    '192.99.168.223': DEFAULT_PORTS,
+    "electrum1.execoin.net": DEFAULT_PORTS,
+    "electrum2.execoin.net": DEFAULT_PORTS,
+    "electrum.execoin.info": DEFAULT_PORTS,
+    "electrum.execoin.org": DEFAULT_PORTS,
 }
 
 
