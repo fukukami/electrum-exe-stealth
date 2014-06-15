@@ -44,14 +44,9 @@ class TxVerifier(threading.Thread):
         """ return the number of confirmations of a monitored transaction. """
         with self.lock:
             if tx in self.verified_tx:
-                height, timestamp, pos = self.verified_tx[tx]
+                height, timestamp, pos = self.verified_tx.get(tx)
                 conf = (self.network.get_local_height() - height + 1)
                 if conf <= 0: timestamp = None
-
-            elif tx in self.transactions:
-                conf = -1
-                timestamp = None
-
             else:
                 conf = 0
                 timestamp = None
@@ -125,8 +120,10 @@ class TxVerifier(threading.Thread):
 
             if method == 'blockchain.transaction.get_merkle':
                 tx_hash = params[0]
-                self.verify_merkle(tx_hash, result)
-                requested_merkle.remove(tx_hash)
+                if self.verify_merkle(tx_hash, result):
+                    requested_merkle.remove(tx_hash)
+                else:
+                    self.queue.put(r)
 
 
     def verify_merkle(self, tx_hash, result):
@@ -134,7 +131,7 @@ class TxVerifier(threading.Thread):
         pos = result.get('pos')
         self.merkle_roots[tx_hash] = self.hash_merkle_root(result['merkle'], tx_hash, pos)
         header = self.network.get_header(tx_height)
-        if not header: return
+        if not header: return False
         assert header.get('merkle_root') == self.merkle_roots[tx_hash]
         # we passed all the tests
         timestamp = header.get('timestamp')
@@ -143,7 +140,7 @@ class TxVerifier(threading.Thread):
         print_error("verified %s"%tx_hash)
         self.storage.put('verified_tx3', self.verified_tx, True)
         self.network.trigger_callback('updated')
-
+        return True
 
     def hash_merkle_root(self, merkle_s, target_hash, pos):
         h = hash_decode(target_hash)
