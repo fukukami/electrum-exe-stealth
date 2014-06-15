@@ -47,11 +47,6 @@ class TxVerifier(threading.Thread):
                 height, timestamp, pos = self.verified_tx.get(tx)
                 conf = (self.network.get_local_height() - height + 1)
                 if conf <= 0: timestamp = None
-
-            elif tx in self.transactions:
-                conf = -1
-                timestamp = None
-
             else:
                 conf = 0
                 timestamp = None
