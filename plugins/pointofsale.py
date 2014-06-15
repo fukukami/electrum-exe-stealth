@@ -62,7 +62,7 @@ class QR_Window(QWidget):
         address_text = "<span style='font-size: 18pt'>%s</span>" % addr if addr else ""
         self.address_label.setText(address_text)
 
-        if currency == 'LTC': currency = None
+        if currency == 'EXE': currency = None
         amount_text = ''
         if amount:
             if currency:
@@ -76,7 +76,7 @@ class QR_Window(QWidget):
 
             if currency:
                 amount_text += "<span style='font-size: 18pt'>%s %s</span><br/>" % (amount, currency)
-            amount_text += "<span style='font-size: 21pt'>%s</span> <span style='font-size: 16pt'>LTC</span> " % str(self.amount) 
+            amount_text += "<span style='font-size: 21pt'>%s</span> <span style='font-size: 16pt'>EXE</span> " % str(self.amount)
         else:
             self.amount = None
             
@@ -86,7 +86,7 @@ class QR_Window(QWidget):
         label_text = "<span style='font-size: 21pt'>%s</span>" % label if label else ""
         self.label_label.setText(label_text)
 
-        msg = 'litecoin:'+self.address
+        msg = 'execoin:'+self.address
         if self.amount is not None:
             msg += '?amount=%s'%(str( self.amount))
             if self.label is not None:
@@ -216,12 +216,12 @@ class Plugin(BasePlugin):
 
         text = text.strip().upper()
         #print text
-        m = re.match('^(\d*(|\.\d*))\s*(|LTC|EUR|USD|GBP|CNY|JPY|RUB|BRL)$', text)
+        m = re.match('^(\d*(|\.\d*))\s*(|EXE|EUR|USD|GBP|CNY|JPY|RUB|BRL)$', text)
         if m and m.group(1) and m.group(1)!='.':
             amount = m.group(1)
             currency = m.group(3)
             if not currency:
-                currency = 'LTC'
+                currency = 'EXE'
             else:
                 currency = currency.upper()
                     
