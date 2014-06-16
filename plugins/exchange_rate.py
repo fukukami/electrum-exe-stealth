@@ -9,10 +9,10 @@ import threading
 import time
 import re
 from decimal import Decimal
-from electrum_ltc.plugins import BasePlugin
-from electrum_ltc.i18n import _
-from electrum_ltc_gui.qt.util import *
-from electrum_ltc_gui.qt.amountedit import AmountEdit
+from electrum_exe.plugins import BasePlugin
+from electrum_exe.i18n import _
+from electrum_exe_gui.qt.util import *
+from electrum_exe_gui.qt.amountedit import AmountEdit
 
 EXCHANGES = ["Cryptsy", "poloniex.com"]
 

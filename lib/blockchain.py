@@ -43,7 +43,12 @@ class Blockchain(threading.Thread):
         self.lock = threading.Lock()
         self.local_height = 0
         self.running = False
-        self.headers_url = 'http://server.electrum-exe.org/blockchain_headers'
+        self.headers_urls = [
+            "http://server.electrum-exe.org/blockchain_headers",
+            "http://electrum.execoin.org/blockchain_headers",
+            "http://electrum.execoin.info/blockchain_headers",
+            "http://electrum.execoin.net/blockchain_headers",
+        ]
         self.set_local_height()
         self.queue = Queue.Queue()
 

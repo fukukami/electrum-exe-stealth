@@ -2,10 +2,10 @@ import curses, datetime, locale
 from decimal import Decimal
 _ = lambda x:x
 #from i18n import _
-from electrum_ltc.util import format_satoshis, set_verbosity
-from electrum_ltc.bitcoin import is_valid
+from electrum_exe.util import format_satoshis, set_verbosity
+from electrum_exe.bitcoin import is_valid
 
-from electrum_ltc import Wallet, WalletStorage
+from electrum_exe import Wallet, WalletStorage
 
 import tty, sys
 
@@ -18,7 +18,7 @@ class ElectrumGui:
         self.network = network
         storage = WalletStorage(config)
         if not storage.file_exists:
-            print "Wallet not found. try 'electrum-ltc create'"
+            print "Wallet not found. try 'electrum-exe create'"
             exit()
 
         self.wallet = Wallet(storage)

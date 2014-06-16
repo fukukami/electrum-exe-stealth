@@ -2,9 +2,9 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import PyQt4.QtCore as QtCore
 
-from electrum_ltc.i18n import _
-from electrum_ltc import Wallet, Wallet_2of2, Wallet_2of3
-import electrum_ltc.bitcoin as bitcoin
+from electrum_exe.i18n import _
+from electrum_exe import Wallet, Wallet_2of2, Wallet_2of3
+import electrum_exe.bitcoin as bitcoin
 
 import seed_dialog
 from network_dialog import NetworkDialog
@@ -13,7 +13,7 @@ from amountedit import AmountEdit
 
 import sys
 import threading
-from electrum_ltc.plugins import run_hook
+from electrum_exe.plugins import run_hook
 
 
 MSG_ENTER_ANYTHING    = _("Please enter a wallet seed, a master public key, a list of Litecoin addresses, or a list of private keys")
@@ -366,7 +366,7 @@ class InstallWizard(QDialog):
 
 
     def create_cold_seed(self, wallet):
-        from electrum_ltc.bitcoin import mnemonic_to_seed, bip32_root
+        from electrum_exe.bitcoin import mnemonic_to_seed, bip32_root
         msg = _('You are about to generate the cold storage seed of your wallet.') + '\n' \
               + _('For safety, you should do this on an offline computer.')
         icon = QPixmap( ':icons/cold_seed.png').scaledToWidth(56)

@@ -22,9 +22,9 @@
 from __future__ import absolute_import
 import android
 
-from electrum_ltc import SimpleConfig, Wallet, WalletStorage, format_satoshis, mnemonic_encode, mnemonic_decode
-from electrum_ltc.bitcoin import is_valid
-from electrum_ltc import util
+from electrum_exe import SimpleConfig, Wallet, WalletStorage, format_satoshis, mnemonic_encode, mnemonic_decode
+from electrum_exe.bitcoin import is_valid
+from electrum_exe import util
 from decimal import Decimal
 import datetime, re
 
@@ -166,7 +166,7 @@ def make_layout(s, scrollable = False):
 
         <TextView
           android:id="@+id/textElectrum"
-          android:text="Electrum-LTC"
+          android:text="Electrum-EXE"
           android:textSize="7pt"
           android:textColor="#ff4444ff"
           android:gravity="left"
@@ -453,7 +453,7 @@ def pay_to(recipient, amount, fee, label):
     else:
         password = None
 
-    droid.dialogCreateSpinnerProgress("Electrum-LTC", "signing transaction...")
+    droid.dialogCreateSpinnerProgress("Electrum-EXE", "signing transaction...")
     droid.dialogShow()
 
     try:
@@ -1009,7 +1009,7 @@ class ElectrumGui:
     def restore_wallet(self):
 
         msg = "recovering wallet..."
-        droid.dialogCreateSpinnerProgress("Electrum-LTC", msg)
+        droid.dialogCreateSpinnerProgress("Electrum-EXE", msg)
         droid.dialogShow()
 
         wallet.restore(lambda x: None)
