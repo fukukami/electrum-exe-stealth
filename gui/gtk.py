@@ -24,18 +24,18 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GObject, cairo
 from decimal import Decimal
-from electrum_ltc.util import print_error
-from electrum_ltc.bitcoin import is_valid
-from electrum_ltc import mnemonic, pyqrnative, WalletStorage, Wallet
+from electrum_exe.util import print_error
+from electrum_exe.bitcoin import is_valid
+from electrum_exe import mnemonic, pyqrnative, WalletStorage, Wallet
 
 Gdk.threads_init()
-APP_NAME = "Electrum-LTC"
+APP_NAME = "Electrum-EXE"
 import platform
 MONOSPACE_FONT = 'Lucida Console' if platform.system() == 'Windows' else 'monospace'
 
-from electrum_ltc.util import format_satoshis, parse_url
-from electrum_ltc.network import DEFAULT_SERVERS
-from electrum_ltc.bitcoin import MIN_RELAY_TX_FEE
+from electrum_exe.util import format_satoshis, parse_url
+from electrum_exe.network import DEFAULT_SERVERS
+from electrum_exe.bitcoin import MIN_RELAY_TX_FEE
 
 def numbify(entry, is_int = False):
     text = entry.get_text().strip()
@@ -464,7 +464,7 @@ class ElectrumWindow:
         self.num_zeros = int(self.config.get('num_zeros',0))
 
         self.window = MyWindow(Gtk.WindowType.TOPLEVEL)
-        title = 'Electrum-LTC ' + self.wallet.electrum_version + '  -  ' + self.config.path
+        title = 'Electrum-EXE ' + self.wallet.electrum_version + '  -  ' + self.config.path
         if not self.wallet.seed: title += ' [seedless]'
         self.window.set_title(title)
         self.window.connect("destroy", Gtk.main_quit)

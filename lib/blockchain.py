@@ -44,10 +44,10 @@ class Blockchain(threading.Thread):
         self.local_height = 0
         self.running = False
         self.headers_urls = [
-            "electrum1.execoin.net",
-            "electrum2.execoin.net",
-            "electrum.execoin.info",
-            "electrum.execoin.org",
+            "http://electrum1.execoin.net/blockchain_headers",
+            "http://electrum2.execoin.net/blockchain_headers",
+            "http://electrum.execoin.info/blockchain_headers",
+            "http://electrum.execoin.org/blockchain_headers",
         ]
         self.set_local_height()
         self.queue = Queue.Queue()
@@ -409,10 +409,13 @@ class Blockchain(threading.Thread):
 
     def retrieve_header(self, i, queue):
         while True:
+            if
             try:
-                ir = queue.get(timeout=1)
+                ir = queue.get(timeout=timeout)
+                timeout = 1
             except Queue.Empty:
-                print_error('timeout')
+                print_error('timeout', timeout)
+                timeout *= 2
                 continue
 
             if not ir:

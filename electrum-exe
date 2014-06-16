@@ -46,11 +46,11 @@ __builtin__.use_local_modules = is_local or is_android
 # load local module as electrum
 if __builtin__.use_local_modules:
     import imp
-    imp.load_module('electrum_ltc', *imp.find_module('lib'))
-    imp.load_module('electrum_ltc_gui', *imp.find_module('gui'))
+    imp.load_module('electrum_exe', *imp.find_module('lib'))
+    imp.load_module('electrum_exe_gui', *imp.find_module('gui'))
 
-from electrum_ltc import *  # todo: import * is generally frowned upon. should import just what is used
-from electrum_ltc.util import print_msg, print_stderr
+from electrum_exe import *  # todo: import * is generally frowned upon. should import just what is used
+from electrum_exe.util import print_msg, print_stderr
 
 # get password routine
 def prompt_password(prompt, confirm=True):
@@ -188,7 +188,7 @@ if __name__ == '__main__':
         if gui_name in ['lite', 'classic']:
             gui_name = 'qt'
         try:
-            gui = __import__('electrum_ltc_gui.' + gui_name, fromlist=['electrum_ltc_gui'])
+            gui = __import__('electrum_exe_gui.' + gui_name, fromlist=['electrum_exe_gui'])
         except ImportError:
             traceback.print_exc(file=sys.stdout)
             sys.exit()
