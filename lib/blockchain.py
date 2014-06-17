@@ -402,11 +402,14 @@ class Blockchain(threading.Thread):
         i.send([ ('blockchain.block.get_header',[h])], lambda i,r: queue.put((i,r)))
 
     def retrieve_header(self, i, queue):
+        timeout = 1
         while True:
             try:
-                ir = queue.get(timeout=1)
+                ir = queue.get(timeout=timeout)
+                timeout = 1
             except Queue.Empty:
-                print_error('timeout')
+                print_error('timeout', timeout)
+                timeout *= 2
                 continue
 
             if not ir:
