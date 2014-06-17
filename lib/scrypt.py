@@ -19,13 +19,13 @@
 import hashlib
 import hmac
 
-def scrypt_1024_1_1_80(header):
+def scrypt_2048_1_1_80(header):
     if not isinstance(header, str) or len(header) != 80:
         raise ValueError('header must be an 80-byte string')
 
     mac = hmac.new(header, digestmod=hashlib.sha256)
 
-    V = [0]*32*1024
+    V = [0]*32*2048
     X = [0]*32
 
     B = list(header[:]) + ['\0']*4
@@ -38,12 +38,12 @@ def scrypt_1024_1_1_80(header):
             X[i*8 + j] = (ord(H[j*4 + 0]) << 0 | ord(H[j*4 + 1]) << 8 |
                           ord(H[j*4 + 2]) << 16 | ord(H[j*4 + 3]) << 24)
 
-    for i in xrange(1024):
+    for i in xrange(2048):
         V[i*32:i*32+32] = X
         _xor_salsa8_2(X)
 
-    for i in xrange(1024):
-        k = (X[16] & 1023) * 32
+    for i in xrange(2048):
+        k = (X[16] & 2047) * 32
         for j in xrange(32):
             X[j] ^= V[k+j]
         _xor_salsa8_2(X)
@@ -248,18 +248,14 @@ def _xor_salsa8_2(X):
 if __name__ == '__main__':
 
     vectors = [
-        ("00"*80, "161d0876f3b93b1048cda1bdeaa7332ee210f7131b42013cb43913a6553a4b69"),
-        ("ff"*80, "5253069c14ecedf978745486375ee37415e977f55cdbedac31ebee8bf33dd127"),
-        ("010000000000000000000000000000000000000000000000000000000000000000000000d9ced4ed1130f7b7faad9be25323ffafa33232a17c3edf6cfd97bee6bafbdd97b9aa8e4ef0ff0f1ecd513f7c", "001e67b013726fd7382e9acb69165b4b6316227fb3156b5b414ba6340c050000"),
-        ("01000000ae178934851bfa0e83ccb6a3fc4bfddff3641e104b6c4680c31509074e699be2bd672d8d2199ef37a59678f92443083e3b85edef8b45c71759371f823bab59a97126614f44d5001d45920180", "01796dae1f78a72dfb09356db6f027cd884ba0201e6365b72aa54b3b00000000"),
-        ("020000008f49e5fd7ef50db9a2a1bff5d3e93717a096329a8ac802a248463ef366ceea1099b1fd0db4ce8f4728251711f759081d0b5b4da015fb78421d8ffbfda1105a2abda1db521b64101b00e60cd0", "461ae94540dc88c9bffbf42bb47e46a2416280adbeeb1d883c18090000000000"),
+        ("00"*80, "3440b2c4c0dfb1636e27c5966d97cc1d9e477a7d3e3b9af95811b8ef7145474a"),
     ]
 
     from timeit import default_timer
     t0 = default_timer()
 
     for header, hash in vectors:
-        assert scrypt_1024_1_1_80(header.decode('hex')) == hash.decode('hex')
+        assert scrypt_2048_1_1_80(header.decode('hex')) == hash.decode('hex')
 
     dt = (default_timer() - t0) / len(vectors)
     print "%.1f ms/hash" % (dt*1000)

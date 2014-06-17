@@ -453,7 +453,7 @@ class Transaction:
     @classmethod
     def pay_script(self, addr):
         addrtype, hash_160 = bc_address_to_hash_160(addr)
-        if addrtype == 48:
+        if addrtype == 33:
             script = '76a9'                                      # op_dup, op_hash_160
             script += '14'                                       # push 0x14 bytes
             script += hash_160.encode('hex')
