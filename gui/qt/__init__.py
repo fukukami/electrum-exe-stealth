@@ -155,12 +155,12 @@ class ElectrumGui:
         try:
             address, amount, label, message, request_url, url = util.parse_url(url)
         except Exception:
-            QMessageBox.warning(self.main_window, _('Error'), _('Invalid litecoin URL'), _('OK'))
+            QMessageBox.warning(self.main_window, _('Error'), _('Invalid execoin URL'), _('OK'))
             return
 
         if amount:
             try:
-                if self.main_window.base_unit() == 'mLTC': 
+                if self.main_window.base_unit() == 'mEXE':
                     amount = str( 1000* Decimal(amount))
                 else: 
                     amount = str(Decimal(amount))

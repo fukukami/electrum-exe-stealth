@@ -787,7 +787,7 @@ class ElectrumWindow:
             to_address = r
 
         if not is_valid(to_address):
-            self.show_message( "invalid litecoin address:\n"+to_address)
+            self.show_message( "invalid execoin address:\n"+to_address)
             return
 
         try:

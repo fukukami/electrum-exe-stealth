@@ -54,7 +54,7 @@ data_files += [
 
 
 setup(
-    name="Electrum-LTC",
+    name="Electrum-EXE",
     version=version.ELECTRUM_VERSION,
     install_requires=['slowaes', 'ecdsa>=0.9', 'vtc_scrypt'],
     package_dir={
@@ -62,7 +62,7 @@ setup(
         'electrum_exe_gui': 'gui',
         'electrum_exe_plugins': 'plugins',
     },
-    scripts=['electrum-ltc'],
+    scripts=['electrum-exe'],
     data_files=data_files,
     py_modules=[
         'electrum_exe.account',
@@ -113,10 +113,10 @@ setup(
         'electrum_exe_plugins.qrscanner',
         'electrum_exe_plugins.virtualkeyboard',
     ],
-    description="Lightweight Litecoin Wallet",
-    author="ecdsa",
-    author_email="ecdsa@github",
+    description="Lightweight Execoin Wallet",
+    author="fukukami",
+    author_email="fukukami@github",
     license="GNU GPLv3",
-    url="http://electrum-ltc.org",
-    long_description="""Lightweight Litecoin Wallet"""
+    url="http://electrum.execoin.org",
+    long_description="""Lightweight Execoin Wallet"""
 )

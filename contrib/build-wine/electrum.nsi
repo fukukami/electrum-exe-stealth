@@ -7,14 +7,14 @@
 ;General
 
   ;Name and file
-  Name "Electrum-LTC"
-  OutFile "dist/electrum-ltc-setup.exe"
+  Name "Electrum-EXE"
+  OutFile "dist/electrum-exe-setup.exe"
 
   ;Default installation folder
-  InstallDir "$PROGRAMFILES\Electrum-LTC"
+  InstallDir "$PROGRAMFILES\Electrum-EXE"
 
   ;Get installation folder from registry if available
-  InstallDirRegKey HKCU "Software\Electrum-LTC" ""
+  InstallDirRegKey HKCU "Software\Electrum-EXE" ""
 
   ;Request application privileges for Windows Vista
   RequestExecutionLevel admin
@@ -36,7 +36,7 @@
 
   ;Start Menu Folder Page Configuration
   !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU"
-  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\Electrum-LTC"
+  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\Electrum-exe"
   !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
 
   ;!insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
@@ -59,21 +59,21 @@ Section
   SetOutPath "$INSTDIR"
 
   ;ADD YOUR OWN FILES HERE...
-  file /r dist\electrum-ltc\*.*
+  file /r dist\electrum-exe\*.*
 
   ;Store installation folder
-  WriteRegStr HKCU "Software\Electrum-LTC" "" $INSTDIR
+  WriteRegStr HKCU "Software\Electrum-EXE" "" $INSTDIR
 
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
 
-  CreateShortCut "$DESKTOP\Electrum-LTC.lnk" "$INSTDIR\electrum-ltc.exe" ""
+  CreateShortCut "$DESKTOP\Electrum-EXE.lnk" "$INSTDIR\electrum-exe.exe" ""
 
   ;create start-menu items
-  CreateDirectory "$SMPROGRAMS\Electrum-LTC"
-  CreateShortCut "$SMPROGRAMS\Electrum-LTC\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
-  CreateShortCut "$SMPROGRAMS\Electrum-LTC\Electrum-LTC.lnk" "$INSTDIR\electrum-ltc.exe" "" "$INSTDIR\electrum-ltc.exe" 0
+  CreateDirectory "$SMPROGRAMS\Electrum-EXE"
+  CreateShortCut "$SMPROGRAMS\Electrum-EXE\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\Electrum-EXE\Electrum-EXE.lnk" "$INSTDIR\electrum-exe.exe" "" "$INSTDIR\electrum-exe.exe" 0
 
 SectionEnd
 
@@ -95,10 +95,10 @@ Section "Uninstall"
 
   RMDir "$INSTDIR"
 
-  Delete "$DESKTOP\Electrum-LTC.lnk"
-  Delete "$SMPROGRAMS\Electrum-LTC\*.*"
-  RmDir  "$SMPROGRAMS\Electrum-LTC"
+  Delete "$DESKTOP\Electrum-EXE.lnk"
+  Delete "$SMPROGRAMS\Electrum-EXE\*.*"
+  RmDir  "$SMPROGRAMS\Electrum-EXE"
 
-  DeleteRegKey /ifempty HKCU "Software\Electrum-LTC"
+  DeleteRegKey /ifempty HKCU "Software\Electrum-EXE"
 
 SectionEnd

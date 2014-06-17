@@ -1,9 +1,9 @@
-Electrum-LTC - lightweight Litecoin client
+Electrum-EXE - lightweight Execoin client
 
 Licence: GNU GPL v3
 Author: Thomas Voegtlin
 Language: Python
-Homepage: https://electrum-ltc.org/
+Homepage: https://electrum-exe.org/
 
 
 1. GETTING STARTED
@@ -11,17 +11,14 @@ Homepage: https://electrum-ltc.org/
 
 To run Electrum from this directory, just do:
 
-  ./electrum-ltc
+  ./electrum-exe
 
 If you install Electrum on your system, you can run it from any
 directory:
 
   sudo python setup.py install
-  electrum-ltc
+  electrum-exe
 
-
-To start Electrum from your web browser, see
-http://electrum-ltc.org/litecoin_URIs.html
 
 
 
@@ -40,6 +37,6 @@ On Mac OS X:
   # On brew installs
   ARCHFLAGS="-arch i386 -arch x86_64" sudo python setup-release.py py2app --includes sip
 
-  sudo hdiutil create -fs HFS+ -volname "Electrum-LTC" -srcfolder dist/Electrum-LTC.app dist/electrum-ltc-VERSION-macosx.dmg
+  sudo hdiutil create -fs HFS+ -volname "Electrum-EXE" -srcfolder dist/Electrum-exe.app dist/electrum-exe-VERSION-macosx.dmg
 
 

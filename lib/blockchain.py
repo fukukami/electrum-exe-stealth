@@ -216,15 +216,22 @@ class Blockchain(threading.Thread):
         if os.path.exists(filename):
             return
 
-        try:
-            import urllib, socket
-            socket.setdefaulttimeout(30)
-            print_error("downloading ", self.headers_url )
-            urllib.urlretrieve(self.headers_url, filename)
-            print_error("done.")
-        except Exception:
-            print_error( "download failed. creating file", filename )
-            open(filename,'wb+').close()
+        loaded_headers = False
+        for header_url in self.headers_urls:
+            try:
+                import urllib, socket
+                socket.setdefaulttimeout(30)
+                print_error("downloading ", header_url )
+                urllib.urlretrieve(header_url, filename)
+                print_error("done.")
+                loaded_headers = True
+                break
+            except Exception:
+                print_error("download from {} failed. trying next source".format(header_url))
+                continue
+        if not loaded_headers:
+            print_error("trusted headers download failed. creating file {}".format(filename))
+            open(filename, 'wb+').close()
 
     def save_chunk(self, index, chunk):
         filename = self.path()
@@ -409,7 +416,8 @@ class Blockchain(threading.Thread):
                 timeout = 1
             except Queue.Empty:
                 print_error('timeout', timeout)
-                timeout *= 2
+                if timeout < 32:
+                    timeout *= 2
                 continue
 
             if not ir:
