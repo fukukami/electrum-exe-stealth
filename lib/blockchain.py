@@ -415,7 +415,8 @@ class Blockchain(threading.Thread):
                 timeout = 1
             except Queue.Empty:
                 print_error('timeout', timeout)
-                timeout *= 2
+                if timeout < 20:
+                    timeout *= 2
                 continue
 
             if not ir:

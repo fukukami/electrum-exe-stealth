@@ -2,16 +2,16 @@
 # sudo desktop-file-install electrum.desktop
 
 [Desktop Entry]
-Comment=Lightweight Litecoin Client
-Exec=electrum-ltc %u
-GenericName[en_US]=Electrum-LTC
-GenericName=Electrum-LTC
-Icon=/usr/share/app-install/icons/electrum-ltc.png
-Name[en_US]=Electrum Litecoin Wallet
-Name=Electrum Litecoin Wallet
+Comment=Lightweight Execoin Client
+Exec=electrum-exe %u
+GenericName[en_US]=Electrum-EXE
+GenericName=Electrum-EXE
+Icon=/usr/share/app-install/icons/electrum .png
+Name[en_US]=Electrum Execoin Wallet
+Name=Electrum Execoin Wallet
 Categories=Network;
 StartupNotify=false
 Terminal=false
 Type=Application
-MimeType=x-scheme-handler/litecoin
+MimeType=x-scheme-handler/execoin
 

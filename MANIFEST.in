@@ -1,8 +1,8 @@
 include README LICENCE RELEASE-NOTES AUTHORS
-include electrum-ltc.conf.sample
-include electrum-ltc.desktop
+include electrum-exe.conf.sample
+include electrum-exe.desktop
 include *.py
-include electrum-ltc
+include electrum-exe
 recursive-include lib *.py
 recursive-include gui *.py
 recursive-include plugins *.py

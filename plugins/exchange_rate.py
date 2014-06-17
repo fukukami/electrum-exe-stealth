@@ -130,13 +130,13 @@ class Plugin(BasePlugin):
         return "Exchange rates"
 
     def description(self):
-        return """exchange rates, retrieved from BTC-e and other market exchanges"""
+        return """exchange rates, retrieved from Cryptsy and other market exchanges"""
 
 
     def __init__(self,a,b):
         BasePlugin.__init__(self,a,b)
-        self.currencies = [self.config.get('currency', "EUR")]
-        self.exchanges = [self.config.get('use_exchange', "BTC-e")]
+        self.currencies = [self.config.get('currency', "BTC")]
+        self.exchanges = [self.config.get('use_exchange', "Cryptsy")]
 
     def init(self):
         self.win = self.gui.main_window
@@ -170,7 +170,7 @@ class Plugin(BasePlugin):
         self.get_fiat_price_text(r)
         quote = r.get(0)
         if quote:
-            price_text = "1 LTC~%s"%quote
+            price_text = "1 EXE~%s"%quote
             fiat_currency = quote[-3:]
             btc_price = self.btc_rate
             fiat_balance = Decimal(btc_price) * (Decimal(btc_balance)/100000000)
@@ -179,8 +179,8 @@ class Plugin(BasePlugin):
         r2[0] = text
 
     def create_fiat_balance_text(self, btc_balance):
-        quote_currency = self.config.get("currency", "EUR")
-        self.exchanger.use_exchange = self.config.get("use_exchange", "BTC-e")
+        quote_currency = self.config.get("currency", "BTC")
+        self.exchanger.use_exchange = self.config.get("use_exchange", "Cryptsy")
         cur_rate = self.exchanger.exchange(Decimal("1.0"), quote_currency)
         if cur_rate is None:
             quote_text = ""
@@ -218,7 +218,7 @@ class Plugin(BasePlugin):
 
     def history_tab_update(self):
         if self.config.get('history_rates', 'unchecked') == "checked":
-            cur_exchange = self.config.get('use_exchange', "BTC-e")
+            cur_exchange = self.config.get('use_exchange', "Cryptsy")
             try:
                 tx_list = self.tx_list
             except Exception:
@@ -230,24 +230,13 @@ class Plugin(BasePlugin):
                 return
             maxtimestr = datetime.datetime.now().strftime('%Y-%m-%d')
 
-            if cur_exchange == "CoinDesk":
+            if cur_exchange == "Cryptsy":
                 try:
-                    resp_hist = self.exchanger.get_json('api.coindesk.com', "/v1/bpi/historical/close.json?start=" + mintimestr + "&end=" + maxtimestr)
+                    resp_hist = self.exchanger.get_http_json(
+                    'pubapi.cryptsy.com',
+                    "/api.php?method=singlemarketdata&marketid={}".format(markets[cur])
+                )["return"]["markets"]["EXE"]["recenttrades"]
                 except Exception:
-                    return
-            elif cur_exchange == "Winkdex":
-                try:
-                    resp_hist = self.exchanger.get_json('winkdex.com', "/static/data/0_86400_730.json")['prices']
-                except Exception:
-                    return
-            elif cur_exchange == "BitcoinVenezuela":
-                cur_currency = self.config.get('currency', "EUR")
-                if cur_currency in ("ARS", "EUR", "USD", "VEF"):
-                    try:
-                        resp_hist = self.exchanger.get_json('api.bitcoinvenezuela.com', "/historical/index.php?coin=LTC")[cur_currency + '_LTC']
-                    except Exception:
-                        return
-                else:
                     return
 
             self.gui.main_window.is_edit = True
@@ -326,12 +315,10 @@ class Plugin(BasePlugin):
                 cur_request = str(self.currencies[x])
             except Exception:
                 return
-            if cur_request != self.config.get('currency', "EUR"):
+            if cur_request != self.config.get('currency', "BTC"):
                 self.config.set_key('currency', cur_request, True)
-                cur_exchange = self.config.get('use_exchange', "BTC-e")
-                if cur_request == "USD" and (cur_exchange == "CoinDesk" or cur_exchange == "Winkdex"):
-                    hist_checkbox.setEnabled(True)
-                elif cur_request in ("ARS", "EUR", "USD", "VEF") and (cur_exchange == "BitcoinVenezuela"):
+                cur_exchange = self.config.get('use_exchange', "Cryptsy")
+                if cur_request == "BTC" and (cur_exchange == "FIXME"):
                     hist_checkbox.setEnabled(True)
                 else:
                     hist_checkbox.setChecked(False)
@@ -350,19 +337,14 @@ class Plugin(BasePlugin):
 
         def on_change_ex(x):
             cur_request = str(self.exchanges[x])
-            if cur_request != self.config.get('use_exchange', "BTC-e"):
+            if cur_request != self.config.get('use_exchange', "Cryptsy"):
                 self.config.set_key('use_exchange', cur_request, True)
                 self.currencies = []
                 combo.clear()
                 self.exchanger.query_rates.set()
-                cur_currency = self.config.get('currency', "EUR")
-                if cur_request == "CoinDesk" or cur_request == "Winkdex":
-                    if cur_currency == "USD":
-                        hist_checkbox.setEnabled(True)
-                    else:
-                        disable_check()
-                elif cur_request == "BitcoinVenezuela":
-                    if cur_currency in ("ARS", "EUR", "USD", "VEF"):
+                cur_currency = self.config.get('currency', "BTC")
+                if cur_request == "FIXME":
+                    if cur_currency in ("BTC"):
                         hist_checkbox.setEnabled(True)
                     else:
                         disable_check()
@@ -383,16 +365,14 @@ class Plugin(BasePlugin):
                     self.gui.main_window.history_list.setColumnWidth(i, width)
 
         def set_hist_check(hist_checkbox):
-            cur_exchange = self.config.get('use_exchange', "BTC-e")
-            if cur_exchange == "CoinDesk" or cur_exchange == "Winkdex":
-                hist_checkbox.setEnabled(True)
-            elif cur_exchange == "BitcoinVenezuela":
-                hist_checkbox.setEnabled(True)
-            else:
-                hist_checkbox.setEnabled(False)
+            cur_exchange = self.config.get('use_exchange', "Cryptsy")
+            # if cur_exchange == "Cryptsy":
+            #     hist_checkbox.setEnabled(True)
+            # else:
+            #     hist_checkbox.setEnabled(False)
 
         def set_currencies(combo):
-            current_currency = self.config.get('currency', "EUR")
+            current_currency = self.config.get('currency', "BTC")
             try:
                 combo.clear()
             except Exception:
@@ -411,7 +391,7 @@ class Plugin(BasePlugin):
                 return
             combo_ex.addItems(self.exchanges)
             try:
-                index = self.exchanges.index(self.config.get('use_exchange', "BTC-e"))
+                index = self.exchanges.index(self.config.get('use_exchange', "Cryptsy"))
             except Exception:
                 index = 0
             combo_ex.setCurrentIndex(index)
@@ -467,7 +447,7 @@ class Plugin(BasePlugin):
         self.get_fiat_price_text(r)
         quote = r.get(0)
         if quote:
-          text = "1 LTC~%s"%quote
+          text = "1 EXE~%s"%quote
           grid.addWidget(QLabel(_(text)), 4, 0, 3, 0)
         else:
             self.gui.main_window.show_message(_("Exchange rate not available.  Please check your network connection."))
@@ -486,12 +466,12 @@ class Plugin(BasePlugin):
 
         quote = quote[:-4]
         btcamount = Decimal(fiat) / Decimal(quote)
-        if str(self.gui.main_window.base_unit()) == "mLTC":
+        if str(self.gui.main_window.base_unit()) == "mEXE":
             btcamount = btcamount * 1000
         quote = "%.8f"%btcamount
         self.gui.main_window.amount_e.setText( quote )
 
     def exchange_rate_button(self, grid):
-        quote_currency = self.config.get("currency", "EUR")
+        quote_currency = self.config.get('currency', "BTC")
         self.fiat_button = EnterButton(_(quote_currency), self.fiat_dialog)
         grid.addWidget(self.fiat_button, 4, 3, Qt.AlignHCenter)

@@ -94,7 +94,7 @@ class Plugin(BasePlugin):
         to_address = m.group(2) if m else r
 
         if not is_valid(to_address):
-            QMessageBox.warning(self.gui.main_window, _('Error'), _('Invalid Litecoin Address') + ':\n' + to_address, _('OK'))
+            QMessageBox.warning(self.gui.main_window, _('Error'), _('Invalid Execoin Address') + ':\n' + to_address, _('OK'))
             return
 
         try:
@@ -368,19 +368,19 @@ def parse_uri(uri):
 if __name__ == '__main__':
     # Run some tests
     
-    assert(parse_uri('LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx') ==
-           {'address': 'LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx'})
+    assert(parse_uri('EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5') ==
+           {'address': 'EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5'})
 
-    assert(parse_uri('litecoin://LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx') ==
-           {'address': 'LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx'})
+    assert(parse_uri('execoin://EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5') ==
+           {'address': 'EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5'})
     
-    assert(parse_uri('litecoin:LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx') ==
-           {'address': 'LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx'})
+    assert(parse_uri('execoin:EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5') ==
+           {'address': 'EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5'})
     
-    assert(parse_uri('litecoin:LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx?amount=10') ==
-           {'amount': '10', 'address': 'LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx'})
+    assert(parse_uri('execoin:EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5?amount=10') ==
+           {'amount': '10', 'address': 'EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5'})
     
-    assert(parse_uri('litecoin:LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx?amount=10&label=devfund&message=Donation%20to%20the%20dev%20fund') ==
-           {'amount': '10', 'label': 'devfund', 'message': 'Donation to the dev fund', 'address': 'LcUP7ZU3Xpk1BUR3qut3dTjC3aK5JoZMYx'})
+    assert(parse_uri('execoin:EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5?amount=10&label=devfund&message=Donation%20to%20the%20dev%20fund') ==
+           {'amount': '10', 'label': 'devfund', 'message': 'Donation to the dev fund', 'address': 'EeBE8eyZNYPZ5tHz1J5Cs6bHNJ43mCDjc5'})
     
     

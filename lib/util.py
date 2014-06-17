@@ -162,7 +162,7 @@ def parse_url(url):
     from decimal import Decimal
 
     u = urlparse.urlparse(url)
-    assert u.scheme == 'litecoin'
+    assert u.scheme == 'execoin'
 
     address = u.path
     #assert bitcoin.is_address(address)
