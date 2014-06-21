@@ -40,7 +40,7 @@ from electrum_exe import Transaction
 from electrum_exe import mnemonic
 from electrum_exe import util, bitcoin, commands, Interface, Wallet
 from electrum_exe import SimpleConfig, Wallet, WalletStorage
-
+from electrum_exe import stealth
 
 from electrum_exe import bmp, pyqrnative
 
@@ -1407,7 +1407,7 @@ class ElectrumWindow(QMainWindow):
         address = str(line1.text())
         label = unicode(line2.text())
 
-        if not is_valid(address):
+        if not is_valid(address) and not stealth.is_valid(address):
             QMessageBox.warning(self, _('Error'), _('Invalid Address'), _('OK'))
             return
 
