@@ -451,9 +451,13 @@ class Transaction:
 
 
     @classmethod
-    def pay_script(self, addr):
+    def pay_script(self, addr, data=None):
         addrtype, hash_160 = bc_address_to_hash_160(addr)
-        if addrtype == 33:
+        if addrtype == 256:                                     # out of prefix range
+            script = '6a'                                       # op_return
+            script += var_int(len(data)/2)                      # push (length of data) bytes
+            script += data
+        elif addrtype == 33:
             script = '76a9'                                      # op_dup, op_hash_160
             script += '14'                                       # push 0x14 bytes
             script += hash_160.encode('hex')
@@ -515,10 +519,15 @@ class Transaction:
             s += "ffffffff"                                          # sequence
 
         s += var_int( len(outputs) )                                 # number of outputs
+        print_error("outputs", outputs)
         for output in outputs:
             addr, amount = output
+            data = None
+            if addr == '0':                                          # null data
+                data = amount
+                amount = 0
             s += int_to_hex( amount, 8)                              # amount
-            script = klass.pay_script(addr)
+            script = klass.pay_script(addr, data)
             s += var_int( len(script)/2 )                           #  script length
             s += script                                             #  script
         s += int_to_hex(0,4)                                        #  lock time

@@ -16,19 +16,35 @@
 
 # import bitcoin
 from bitcoin import *
+# import ecdsa as _ecdsa
 import keys
 
 VERSION_PREFIX = '0b'
 VERSION_PREFIX_TESTNET = '0c'
+METADATA = '0600000000'
+
+def is_valid(addr):
+    return is_address(addr)
+
+def is_address(addr):
+    ADDRESS_RE = re.compile('[1-9A-HJ-NP-Za-km-z]{102,}\\Z')
+    if not ADDRESS_RE.match(addr): return False
+    return True
 
 def newkey():
-    return ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1).to_string().encode('hex')
+    return ecdsa.SigningKey.generate(curve=ecdsa.curves.SECP256k1).to_string().encode('hex')
 
 def secrets_to_stealth(scan_secret, spend_secret):
     scanp = secret_to_pubkey(scan_secret)
     spendp = secret_to_pubkey(spend_secret)
     stealth = pubs_to_stealth(scanp, spendp)
     return stealth
+
+def pubkey_to_address(pubkey):
+    return public_key_to_bc_address(pubkey.decode('hex'))
+
+def secret_to_wif(secret, compress=True):
+    return SecretToASecret(secret.decode('hex'), compress)
 
 def pubs_to_stealth(scan_pubkey, spend_pubkey):
     addr = VERSION_PREFIX
@@ -77,7 +93,7 @@ def initiate(ephem_secret, scan_pubkey, spend_pubkey):
     pay_pubkey = keys.encode_pubkey((po.x(), po.y()), 'hex_compressed')
     addrp = keys.add_pubkeys(keys.decode_pubkey(spend_pubkey), pay_pubkey)
     addrp = keys.encode_pubkey(addrp, "hex_compressed")
-    addr = public_key_to_bc_address(addrp)
+    addr = pubkey_to_address(addrp)
     return addr
 
 def uncover_address(ephem_pubkey, scan_secret, spend_pubkey):
@@ -91,7 +107,7 @@ def uncover_address(ephem_pubkey, scan_secret, spend_pubkey):
     pay_pubkey = keys.encode_pubkey((po.x(), po.y()), 'hex_compressed')
     addrp = keys.add_pubkeys(keys.decode_pubkey(spend_pubkey), pay_pubkey)
     addrp = keys.encode_pubkey(addrp, "hex_compressed")
-    addr = public_key_to_bc_address(addrp)
+    addr = pubkey_to_address(addrp)
     return addr
 
 def uncover_secret(ephem_pubkey, scan_secret, spend_secret):
@@ -192,22 +208,36 @@ if __name__ == '__main__':
 
     print "recoverable (uncover-secret)"
     secret = uncover_secret(epp, scans, spends)
-    print public_key_to_bc_address(secret_to_pubkey(secret))
+    print pubkey_to_address(secret_to_pubkey(secret))
     print "secret", secret, type(secret)
-    print "WIF", keys.encode_privkey(keys.decode_privkey(secret), 'wif', 33)
-    assert(public_key_to_bc_address(secret_to_pubkey(secret)) == initiate(eps, scanp, spendp))
+    print "WIF", secret_to_wif(secret)
+    assert(pubkey_to_address(secret_to_pubkey(secret)) == initiate(eps, scanp, spendp))
     print "[OK]\n"
 
     print "recoverable (initiate from stealth)"
     r = initiate_from_stealth('ExkgHXCHv17dnJyxaKAbPe2kZaH5fqg4HsdKyHWKNRDAPiGppQFTmnatqZbnGc1GdHT91fSGFcbJko1LByxeEN2jodSqne4Z2vg5nG')
     print r
     secret = uncover_secret(r['ephem_key'], scans, spends)
-    addr = public_key_to_bc_address(secret_to_pubkey(secret))
+    addr = pubkey_to_address(secret_to_pubkey(secret))
     print "addr", addr
     assert (r['address'] == addr)
     print "[OK]\n"
 
-    # import sys; sys.exit()
+    print "recoverable (uncover-secret)"
+    secret = uncover_secret(
+        '02c3764a52299a6515241274ceb670356ec0c1af24dfdc5135a1e8c0914d86fb68',
+        '081e54bb39a75cbc9f67e8103b9630f559d5d038064b4b944aa52782aaab57e3',
+        '8a72fb666bb8ebb3fbd429b0949c0be8dfab23962c2ba55ecf1b676f5eb55528'
+    )
+    print "secret", secret, type(secret)
+    pub = secret_to_pubkey(secret)
+    print "pub", pub
+    print pubkey_to_address(pub)
+    print "WIF", SecretToASecret(secret.decode('hex'), True)
+    print "WIF", secret_to_wif(secret)
+    print "[OK]\n"
+
+
     # =========================================================================
     # dynamic data tests
     # =========================================================================
@@ -241,9 +271,6 @@ if __name__ == '__main__':
     print "recoverable (initiate == uncover)"
     assert(uncover_address(epp, scans, spendp) == initiate(eps, scanp, spendp))
     print "[OK]\n"
-
-
-
 
     # print "prefix tests"
     # VERSION_PREFIX = '0b'

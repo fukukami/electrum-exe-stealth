@@ -38,6 +38,7 @@ from transaction import Transaction
 from plugins import run_hook
 import bitcoin
 from synchronizer import WalletSynchronizer
+import stealth
 
 COINBASE_MATURITY = 100
 DUST_THRESHOLD = 0
@@ -835,10 +836,15 @@ class Abstract_Wallet:
 
         return default_label
 
+    def stealth_outputs(self, stealth_address, amount):
+        # todo proper key generation
+        r = stealth.initiate_from_stealth(stealth_address)
+        ekey = "0600000000" + r['ephem_key'] # add stealth metadata
+        return [('0', ekey), (r['address'], amount)]
 
     def make_unsigned_transaction(self, outputs, fee=None, change_addr=None, domain=None ):
         for address, x in outputs:
-            assert is_valid(address), "Address " + address + " is invalid!"
+            assert not (not is_valid(address) and not stealth.is_valid(address)), "Address " + address + " is invalid!"
         amount = sum( map(lambda x:x[1], outputs) )
         inputs, total, fee = self.choose_tx_inputs( amount, fee, len(outputs), domain )
         if not inputs:
@@ -846,6 +852,13 @@ class Abstract_Wallet:
         for txin in inputs:
             self.add_input_info(txin)
         outputs = self.add_tx_change(inputs, outputs, amount, fee, total, change_addr)
+        # replace all stealth addresses with proper outputs
+        for i, output in enumerate(outputs):
+            address, amount = output
+            if stealth.is_valid(address):
+                stealth_outputs = self.stealth_outputs(address, amount)
+                outputs[i] = stealth_outputs[1]
+                outputs.insert(i, stealth_outputs[0])
         return Transaction.from_io(inputs, outputs)
 
 
