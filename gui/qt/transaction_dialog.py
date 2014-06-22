@@ -34,6 +34,7 @@ from PyQt4.QtCore import *
 import PyQt4.QtCore as QtCore
 
 from electrum_exe import transaction
+from electrum_exe import stealth
 from util import MyTreeWidget
 
 class TxDialog(QDialog):
@@ -205,7 +206,14 @@ class TxDialog(QDialog):
         vbox.addWidget(i_text)
 
         vbox.addWidget(QLabel(_("Outputs")))
-        lines = map(lambda x: x[0] + u'\t\t' + self.parent.format_amount(x[1]), self.tx.outputs)
+        def frmt(x):
+            if x[0] == '0':
+                if x[1].startswith(stealth.METADATA):
+                    eph = x[1].replace(stealth.METADATA, '')
+                    return "Ephemkey \t" + eph[:20] + "..." + eph[-20:]
+                return 'Null data: ' + x[1][:25]+"..."+x[1][-25:]
+            return x[0] + u'\t\t' + self.parent.format_amount(x[1])
+        lines = map(frmt, self.tx.outputs)
         o_text = QTextEdit()
         o_text.setText('\n'.join(lines))
         o_text.setReadOnly(True)

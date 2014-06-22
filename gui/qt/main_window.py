@@ -779,7 +779,7 @@ class ElectrumWindow(QMainWindow):
             # label or alias, with address in brackets
             m = re.match('(.*?)\s*\<([1-9A-HJ-NP-Za-km-z]{26,})\>', r)
             to_address = m.group(2) if m else r
-            if not is_valid(to_address):
+            if not is_valid(to_address) and not stealth.is_valid(to_address):
                 QMessageBox.warning(self, _('Error'), _('Invalid Execoin Address') + ':\n' + to_address, _('OK'))
                 return
 

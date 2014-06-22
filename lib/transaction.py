@@ -708,7 +708,8 @@ class Transaction:
                     
         for item in self.outputs:
             addr, value = item
-            v_out += value
+            if type(value) is int:
+                v_out += value
             if addr in addresses:
                 v_out_mine += value
                 is_relevant = True
