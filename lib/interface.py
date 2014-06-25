@@ -432,6 +432,9 @@ class Interface(threading.Thread):
                         print_error("socket errno", err.errno)
                         time.sleep(0.1)
                         continue
+                    elif err.errno == 104:
+                        print_error("connection reset by peer", err.errno)
+                        timeout = True
                     else:
                         traceback.print_exc(file=sys.stdout)
                         raise
