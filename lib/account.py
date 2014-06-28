@@ -19,7 +19,7 @@
 from bitcoin import *
 from i18n import _
 from transaction import Transaction
-
+import stealth
 
 
 class Account(object):
@@ -206,6 +206,52 @@ class OldAccount(Account):
         a, b = sequence
         return 'old(%s,%d,%d)'%(self.mpk.encode('hex'),a,b)
 
+
+class StealthAccount(OldAccount):
+    def __init__(self, v):
+        for k, val in v.items():
+            self.__setattr__(k, val)
+        self.addresses = v.get('addresses', [])
+        pass
+
+    def dump(self):
+        return {
+            'addresses': self.addresses,
+        }
+
+    def get_addresses(self, for_change=False):
+        # this should be based on stealth tx history
+        return []
+
+    def get_pubkey_from_x(self, xpub, n):
+        _, _, _, c, cK = deserialize_xkey(xpub)
+        # for i in [for_change, n]:
+        cK, c = CKD_pub(cK, c, n)
+        return cK.encode('hex')
+
+    def create_new_stealth_address(self):
+        addresses = self.addresses
+        n = len(addresses)
+        #address = self.get_address( for_change, n)
+        scan_pub = self.get_pubkey_from_x(self.master_public_scan, n)
+        spend_pub = self.get_pubkey_from_x(self.master_public_spend, n)
+        address = stealth.pubs_to_stealth(scan_pub, spend_pub)
+        self.addresses.append(address)
+        return address
+
+    def get_stealth_addresses(self):
+        return self.addresses[:]
+
+    def get_real_from_stealth(self, stealth_address):
+        # this should be based on stealth tx history
+        # tofix dummy data
+        return []
+
+    def get_stealth_address_balance(self, stealth_address):
+        return 0.0
+
+    def get_name(self, k):
+        return _('Stealth account')
 
 
 class BIP32_Account(Account):

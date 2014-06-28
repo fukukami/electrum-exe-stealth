@@ -1219,6 +1219,24 @@ class ElectrumWindow(QMainWindow):
             else:
                 account_item = l
 
+            #stealth wallet
+            if 's/' in str(k):
+                for stealth_address in account.get_stealth_addresses():
+                    # print stealth_address
+                    stealth_address_item = QTreeWidgetItem( [ stealth_address, '', '', '', ''] )
+                    self.update_receive_item(stealth_address_item)
+                    account_item.addChild(stealth_address_item)
+                    account_item.setExpanded(True)
+                    for address in account.get_real_from_stealth(stealth_address):
+                        # c, u = self.wallet.get_addr_balance(address)
+                        # num_tx = '*' if h == ['*'] else "%d"%len(h)
+                        num_tx = str(0)
+                        item = QTreeWidgetItem( [ address, '', '', num_tx] )
+                        self.update_receive_item(item)
+                        stealth_address_item.addChild(item)
+                continue
+
+            #common wallet
             sequences = [0,1] if account.has_change() else [0]
             for is_change in sequences:
                 if len(sequences) > 1:
