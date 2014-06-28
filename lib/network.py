@@ -9,7 +9,7 @@ DEFAULT_PORTS = {'t':'50011', 's':'50012', 'h':'8181', 'g':'8282'}
 DEFAULT_SERVERS = {
     'server.electrum-exe.org': DEFAULT_PORTS,
     'electrum.execoin.info': DEFAULT_PORTS,
-    'electum.execoin.net': DEFAULT_PORTS,
+    'electrum.execoin.org': DEFAULT_PORTS,
     'electrum.execoin.net': DEFAULT_PORTS,
 }
 
