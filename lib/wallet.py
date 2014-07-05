@@ -766,7 +766,7 @@ class Abstract_Wallet:
             history = self.transactions.items()
             history.sort(key = lambda x: self.verifier.get_txpos(x[0]))
             result = []
-    
+
             balance = 0
             for tx_hash, tx in history:
                 is_relevant, is_mine, v, fee = self.get_tx_value(tx, account)
@@ -1798,14 +1798,14 @@ class StealthOldWallet(OldWallet):
                 self.accounts[k] = StealthAccount(v)
             elif v.get('imported'):
                 self.accounts[k] = ImportedAccount(v)
-            elif v.get('xpub3'):
-                self.accounts[k] = BIP32_Account_2of3(v)
-            elif v.get('xpub2'):
-                self.accounts[k] = BIP32_Account_2of2(v)
-            elif v.get('xpub'):
-                self.accounts[k] = BIP32_Account(v)
-            elif v.get('pending'):
-                self.accounts[k] = PendingAccount(v)
+            # elif v.get('xpub3'):
+            #     self.accounts[k] = BIP32_Account_2of3(v)
+            # elif v.get('xpub2'):
+            #     self.accounts[k] = BIP32_Account_2of2(v)
+            # elif v.get('xpub'):
+            #     self.accounts[k] = BIP32_Account(v)
+            # elif v.get('pending'):
+            #     self.accounts[k] = PendingAccount(v)
             else:
                 print_error("cannot load account", v)
 
@@ -1851,6 +1851,68 @@ class StealthOldWallet(OldWallet):
             self.save_accounts()
             self.storage.put('addr_history', self.history, True)
         return new
+
+    def is_mine_stealth_tx(self, addr, ephemkey):
+        return self.accounts['s/0/'].is_mine_stealth_tx(addr, ephemkey)
+
+    def receive_stealth_history_callback(self, tx_list):
+        for tx in tx_list:
+            print "rcv sx cbk", tx
+            addr, ephemkey,  = tx['address'], tx['ephemkey']
+            tx_hash, tx_height = tx['txid'], tx['height']
+            print "rcv stlth hist clbk", addr, ephemkey, tx_hash, tx_height
+            print_error('receive_stealth_history_callback', addr, ephemkey, tx_hash, tx_height)
+            if self.is_mine_stealth_tx(addr, ephemkey):
+                if self.verifier:
+                    print "add to verifier"
+                    self.verifier.add(tx_hash, tx_height)
+                self.receive_history_callback(addr, [(tx_hash, tx_height)])
+
+    def get_account_addresses(self, a, include_change=True):
+        if a is None:
+            o = self.addresses(True)
+        elif a in self.accounts:
+            ac = self.accounts[a]
+            o = ac.get_addresses(0)
+            if include_change: o += ac.get_addresses(1)
+        return o
+
+    def get_tx_history(self, account=None):
+        if not self.verifier:
+            return []
+
+        with self.transaction_lock:
+            history = self.transactions.items()
+            history.sort(key = lambda x: self.verifier.get_txpos(x[0]))
+            result = []
+            print "get tx hist ", len(history)
+            balance = 0
+            for tx_hash, tx in history:
+                is_relevant, is_mine, v, fee = self.get_tx_value(tx, account)
+                if tx_hash == "b208cfa5dbf241ab977df7c6146eb956953129ef804e259ca2265d4fab087af2":
+                    print "get tx hist get tx val", is_relevant, is_mine, v, fee, tx_hash[:10]
+                if v is not None: balance += v
+
+            c, u = self.get_account_balance(account)
+
+            if balance != c+u:
+                result.append( ('', 1000, 0, c+u-balance, None, c+u-balance, None ) )
+
+            balance = c + u - balance
+            for tx_hash, tx in history:
+                is_relevant, is_mine, value, fee = self.get_tx_value(tx, account)
+                if not is_relevant:
+                    continue
+                if value is not None:
+                    balance += value
+
+                conf, timestamp = self.verifier.get_confirmations(tx_hash) if self.verifier else (None, None)
+                if tx_hash == 'b208cfa5dbf241ab977df7c6146eb956953129ef804e259ca2265d4fab087af2':
+                    print "conf, time", conf, timestamp, self.verifier
+                result.append( (tx_hash, conf, is_mine, value, fee, balance, timestamp) )
+
+        # print "get tx hist res", result
+        return result
 
 
 # former WalletFactory

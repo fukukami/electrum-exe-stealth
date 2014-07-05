@@ -714,6 +714,9 @@ class Transaction:
                 v_out_mine += value
                 is_relevant = True
 
+        # print "get value, vin, vout", v_in, v_out, v_out_mine
+        # print "get value", self.outputs
+
         if is_pruned:
             # some inputs are mine:
             fee = None

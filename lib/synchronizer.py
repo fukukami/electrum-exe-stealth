@@ -49,6 +49,11 @@ class WalletSynchronizer(threading.Thread):
             messages.append(('blockchain.address.subscribe', [addr]))
         self.network.subscribe( messages, lambda i,r: self.queue.put(r))
 
+    def subscribe_to_stealth(self):
+        self.network.subscribe([ ('blockchain.stealth.subscribe',[]) ], lambda i,r: self.queue.put(r))
+
+    def stealth_fetch(self, height=0):
+        self.network.send([ ('blockchain.stealth.fetch',[height]) ], lambda i,r: self.queue.put(r))
 
     def run(self):
         with self.lock:
@@ -82,6 +87,8 @@ class WalletSynchronizer(threading.Thread):
 
         # subscriptions
         self.subscribe_to_addresses(self.wallet.addresses(True))
+        self.subscribe_to_stealth()
+        # self.stealth_fetch()
 
         while self.is_running():
             # 1. create new addresses
@@ -143,7 +150,6 @@ class WalletSynchronizer(threading.Thread):
 
             elif method == 'blockchain.address.get_history':
                 addr = params[0]
-                print_error("receiving history", addr, result)
                 if result == ['*']:
                     assert requested_histories.pop(addr) == '*'
                     self.wallet.receive_history_callback(addr, result)
@@ -157,6 +163,7 @@ class WalletSynchronizer(threading.Thread):
                             txids.append(tx_hash)
                             hist.append( (tx_hash, item['height']) )
 
+                    print "rcv hstr", hist
                     if len(hist) != len(result):
                         raise Exception("error: server sent history with non-unique txid", result)
 
@@ -173,6 +180,17 @@ class WalletSynchronizer(threading.Thread):
                         if self.wallet.transactions.get(tx_hash) is None:
                             if (tx_hash, tx_height) not in requested_tx and (tx_hash, tx_height) not in missing_tx:
                                 missing_tx.append( (tx_hash, tx_height) )
+
+            elif method == 'blockchain.stealth.fetch':
+                sx_list = result
+                print "stealth_fetch", sx_list
+                print "stealth_fetch", error
+                # self.wallet.receive_stealth_history_callback(result)
+
+            elif method == 'blockchain.stealth.subscribe':
+                print "stealth_subs", result
+                print "stealth_subs", error
+                self.wallet.receive_stealth_history_callback(result)
 
             elif method == 'blockchain.transaction.get':
                 tx_hash = params[0]

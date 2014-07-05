@@ -358,6 +358,12 @@ class Network(threading.Thread):
             if not self.interface.is_connected and self.config.get('auto_cycle'):
                 self.switch_to_random_interface()
 
+    def on_stealth_tx(self, i, r):
+        if r.get('error', None) is not None:
+            print_error("server", i.server, "does not support stealth tx")
+            return
+        result = r.get('result', [])
+        print_error("new stealth_tx", result)
 
     def on_header(self, i, r):
         result = r.get('result')

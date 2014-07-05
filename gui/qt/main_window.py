@@ -1223,7 +1223,7 @@ class ElectrumWindow(QMainWindow):
             if 's/' in str(k):
                 for stealth_address in account.get_stealth_addresses():
                     # print stealth_address
-                    stealth_address_item = QTreeWidgetItem( [ stealth_address, '', '', '', ''] )
+                    stealth_address_item = QTreeWidgetItem( [ stealth_address, '', '', ''] )
                     self.update_receive_item(stealth_address_item)
                     account_item.addChild(stealth_address_item)
                     account_item.setExpanded(True)

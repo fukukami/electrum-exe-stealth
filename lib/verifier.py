@@ -101,6 +101,9 @@ class TxVerifier(threading.Thread):
                         if self.network.send([ ('blockchain.transaction.get_merkle',[tx_hash, tx_height]) ], lambda i,r: self.queue.put(r)):
                             print_error('requesting merkle', tx_hash)
                             requested_merkle.append(tx_hash)
+                    elif tx_hash not in requested_merkle:
+                        if self.verify_merkle(tx_hash, self.merkle_roots.get(tx_hash)):
+                            requested_merkle.remove(tx_hash)
 
             try:
                 r = self.queue.get(timeout=1)
@@ -131,6 +134,8 @@ class TxVerifier(threading.Thread):
         pos = result.get('pos')
         self.merkle_roots[tx_hash] = self.hash_merkle_root(result['merkle'], tx_hash, pos)
         header = self.network.get_header(tx_height)
+        # if tx_hash == "b208cfa5dbf241ab977df7c6146eb956953129ef804e259ca2265d4fab087af2":
+        #     print "verify_merkle", header
         if not header: return False
         assert header.get('merkle_root') == self.merkle_roots[tx_hash]
         # we passed all the tests
