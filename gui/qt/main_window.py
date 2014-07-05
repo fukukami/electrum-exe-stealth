@@ -1071,6 +1071,17 @@ class ElectrumWindow(QMainWindow):
         self.wallet.delete_pending_account(k)
         self.update_receive_tab()
 
+    def create_stealth_menu(self, position, k, item):
+        menu = QMenu()
+        menu.addAction(_("Copy to clipboard"), lambda: self.app.clipboard().setText(k))
+        if item.isExpanded():
+            menu.addAction(_("Minimize"), lambda: self.account_set_expanded(item, k, False))
+        else:
+            menu.addAction(_("Maximize"), lambda: self.account_set_expanded(item, k, True))
+        menu.addAction(_("QR code"), lambda: self.show_qrcode("execoin:" + k, _("Address")) )
+        menu.addAction(_("Edit label"), lambda: self.edit_label(True))
+        menu.exec_(self.receive_list.viewport().mapToGlobal(position))
+
     def create_receive_menu(self, position):
         # fixme: this function apparently has a side effect.
         # if it is not called the menu pops up several times
@@ -1084,6 +1095,9 @@ class ElectrumWindow(QMainWindow):
             if not item: return
 
             addr = addrs[0]
+            if stealth.is_valid(addr):
+                self.create_stealth_menu(position, addr, item)
+                return
             if not is_valid(addr):
                 k = str(item.data(0,32).toString())
                 if k:
@@ -1222,11 +1236,10 @@ class ElectrumWindow(QMainWindow):
             #stealth wallet
             if 's/' in str(k):
                 for stealth_address in account.get_stealth_addresses():
-                    # print stealth_address
+                    account_item.setExpanded(True)
                     stealth_address_item = QTreeWidgetItem( [ stealth_address, '', '', ''] )
                     self.update_receive_item(stealth_address_item)
                     account_item.addChild(stealth_address_item)
-                    account_item.setExpanded(True)
                     for address in account.get_real_from_stealth(stealth_address):
                         # c, u = self.wallet.get_addr_balance(address)
                         # num_tx = '*' if h == ['*'] else "%d"%len(h)
