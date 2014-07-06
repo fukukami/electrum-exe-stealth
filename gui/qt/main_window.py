@@ -1237,14 +1237,14 @@ class ElectrumWindow(QMainWindow):
             if 's/' in str(k):
                 for stealth_address in account.get_stealth_addresses():
                     account_item.setExpanded(True)
-                    stealth_address_item = QTreeWidgetItem( [ stealth_address, '', '', ''] )
+                    c, u = self.wallet.get_addr_balance(stealth_address)
+                    stealth_address_item = QTreeWidgetItem( [ stealth_address, str(c), '', ''] )
                     self.update_receive_item(stealth_address_item)
                     account_item.addChild(stealth_address_item)
                     for address in account.get_real_from_stealth(stealth_address):
-                        # c, u = self.wallet.get_addr_balance(address)
-                        # num_tx = '*' if h == ['*'] else "%d"%len(h)
+                        c, u = self.wallet.get_addr_balance(address)
                         num_tx = str(0)
-                        item = QTreeWidgetItem( [ address, '', '', num_tx] )
+                        item = QTreeWidgetItem( [ address, str(c), str(u), num_tx] )
                         self.update_receive_item(item)
                         stealth_address_item.addChild(item)
                 continue

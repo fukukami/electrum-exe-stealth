@@ -289,6 +289,7 @@ class StealthAccount(OldAccount):
                 return True
         return False
 
+
 class BIP32_Account(Account):
 
     def __init__(self, v):
