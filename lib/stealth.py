@@ -97,6 +97,22 @@ def initiate(ephem_secret, scan_pubkey, spend_pubkey):
     return addr
 
 def uncover_address(ephem_pubkey, scan_secret, spend_pubkey):
+    pubkey = uncover_pubkey(ephem_pubkey, scan_secret, spend_pubkey)
+    return pubkey_to_address(pubkey)
+
+def uncover_secret(ephem_pubkey, scan_secret, spend_secret, format = 'hex_compressed'):
+    a = keys.decode_privkey(scan_secret)
+    b = keys.decode_pubkey(ephem_pubkey)
+    s = keys.multiply(b, a)
+    sh = keys.encode_pubkey(s, "hex_compressed")
+    hsh = keys.sha256(sh.decode('hex'))
+    shareds = keys.decode(hsh, 16)
+    po = shareds * generator_secp256k1
+    pay_pubkey = keys.encode_pubkey((po.x(), po.y()), format)
+    addrp = keys.add_privkeys(spend_secret, hsh)
+    return addrp
+
+def uncover_pubkey(ephem_pubkey, scan_secret, spend_pubkey):
     a = keys.decode_privkey(scan_secret)
     b = keys.decode_pubkey(ephem_pubkey)
     s = keys.multiply(b, a)
@@ -107,19 +123,6 @@ def uncover_address(ephem_pubkey, scan_secret, spend_pubkey):
     pay_pubkey = keys.encode_pubkey((po.x(), po.y()), 'hex_compressed')
     addrp = keys.add_pubkeys(keys.decode_pubkey(spend_pubkey), pay_pubkey)
     addrp = keys.encode_pubkey(addrp, "hex_compressed")
-    addr = pubkey_to_address(addrp)
-    return addr
-
-def uncover_secret(ephem_pubkey, scan_secret, spend_secret):
-    a = keys.decode_privkey(scan_secret)
-    b = keys.decode_pubkey(ephem_pubkey)
-    s = keys.multiply(b, a)
-    sh = keys.encode_pubkey(s, "hex_compressed")
-    hsh = keys.sha256(sh.decode('hex'))
-    shareds = keys.decode(hsh, 16)
-    po = shareds * generator_secp256k1
-    pay_pubkey = keys.encode_pubkey((po.x(), po.y()), 'hex_compressed')
-    addrp = keys.add_privkeys(spend_secret, hsh)
     return addrp
 
 #==============
