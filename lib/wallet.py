@@ -1652,7 +1652,7 @@ class StealthOldWallet(OldWallet):
 
         self.next_addresses = storage.get('next_addresses',{})
 
-        self.last_stealth_height = storage.get('last_stealth_height', 270000)
+        self.last_stealth_height = storage.get('last_stealth_height', stealth.GENESIS)
 
         # This attribute is set when wallet.start_threads is called.
         self.synchronizer = None
@@ -1852,14 +1852,16 @@ class StealthOldWallet(OldWallet):
     def is_mine_stealth_tx(self, addr, ephemkey):
         return self.accounts['s/0/'].is_mine_stealth_tx(addr, ephemkey)
 
+    def save_last_stealth_height(self, tx_height):
+        self.last_stealth_height = tx_height
+        self.storage.put('last_stealth_height', tx_height)
+
     def receive_stealth_history_callback(self, tx_list):
         for tx in tx_list:
             addr, ephemkey,  = tx['address'], tx['ephemkey']
             tx_hash, tx_height = tx['txid'], tx['height']
             print_error('receive_stealth_history_callback', addr, ephemkey, tx_hash, tx_height)
             if self.is_mine_stealth_tx(addr, ephemkey):
-                self.last_stealth_height = tx_height
-                self.storage.put('last_stealth_height', self.last_stealth_height)
                 if self.verifier:
                     self.verifier.add(tx_hash, tx_height)
                 self.receive_history_callback(addr, [(tx_hash, tx_height)])
