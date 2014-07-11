@@ -88,7 +88,7 @@ class WalletSynchronizer(threading.Thread):
         # subscriptions
         self.subscribe_to_addresses(self.wallet.addresses(True))
         self.subscribe_to_stealth()
-        # self.stealth_fetch()
+        self.stealth_fetch(self.wallet.last_stealth_height)
 
         while self.is_running():
             # 1. create new addresses
@@ -163,7 +163,6 @@ class WalletSynchronizer(threading.Thread):
                             txids.append(tx_hash)
                             hist.append( (tx_hash, item['height']) )
 
-                    print "rcv hstr", hist
                     if len(hist) != len(result):
                         raise Exception("error: server sent history with non-unique txid", result)
 
@@ -182,15 +181,13 @@ class WalletSynchronizer(threading.Thread):
                                 missing_tx.append( (tx_hash, tx_height) )
 
             elif method == 'blockchain.stealth.fetch':
-                sx_list = result
-                print "stealth_fetch", sx_list
-                print "stealth_fetch", error
-                # self.wallet.receive_stealth_history_callback(result)
+                sx_list = sorted(result, key=lambda k: k['height'])
+                self.wallet.receive_stealth_history_callback(sx_list)
+                self.was_updated = True
 
             elif method == 'blockchain.stealth.subscribe':
-                print "stealth_subs", result
-                print "stealth_subs", error
                 self.wallet.receive_stealth_history_callback(result)
+                self.was_updated = True
 
             elif method == 'blockchain.transaction.get':
                 tx_hash = params[0]

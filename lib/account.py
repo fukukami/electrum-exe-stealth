@@ -235,7 +235,6 @@ class StealthAccount(OldAccount):
         ephemkey = None
         address = None
         for i in self.stealth_transactions:
-            print "i.get", i, i.get('address') == addr
             if i.get('address') == addr:
                 ephemkey = i.get('ephemkey', None)
                 address = i.get('stealth_address', None)
@@ -250,7 +249,6 @@ class StealthAccount(OldAccount):
         ephemkey = None
         address = None
         for i in self.stealth_transactions:
-            print "i.get", i, i.get('address') == addr
             if i.get('address') == addr:
                 ephemkey = i.get('ephemkey', None)
                 address = i.get('stealth_address', None)

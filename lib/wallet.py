@@ -627,7 +627,10 @@ class Abstract_Wallet:
             if h == ['*']: continue
             for tx_hash, tx_height in h:
                 tx = self.transactions.get(tx_hash)
-                if tx is None: raise Exception("Wallet not synchronized")
+                if tx is None:
+                    print "tx domain", domain
+                    print "tx", tx_height, tx_hash, tx
+                    raise Exception("Wallet not synchronized")
                 is_coinbase = tx.inputs[0].get('prevout_hash') == '0'*64
                 for o in tx.d.get('outputs'):
                     output = o.copy()
@@ -1265,12 +1268,15 @@ class Deterministic_Wallet(Abstract_Wallet):
         def wait_for_wallet():
             self.set_up_to_date(False)
             while not self.is_up_to_date():
-                msg = "%s\n%s %d\n%s %.1f"%(
+                msg = "%s\n%s %d\n%s %.1f\n%s %d"%(
                     _("Please wait..."),
                     _("Addresses generated:"),
                     len(self.addresses(True)), 
                     _("Kilobytes received:"), 
-                    self.network.interface.bytes_received/1024.)
+                    self.network.interface.bytes_received/1024.,
+                    _("Last stealth transaction found in block "),
+                    self.last_stealth_height
+                )
 
                 apply(callback, (msg,))
                 time.sleep(0.1)
@@ -1646,6 +1652,7 @@ class StealthOldWallet(OldWallet):
 
         self.next_addresses = storage.get('next_addresses',{})
 
+        self.last_stealth_height = storage.get('last_stealth_height', 0)
 
         # This attribute is set when wallet.start_threads is called.
         self.synchronizer = None
@@ -1798,14 +1805,6 @@ class StealthOldWallet(OldWallet):
                 self.accounts[k] = StealthAccount(v)
             elif v.get('imported'):
                 self.accounts[k] = ImportedAccount(v)
-            # elif v.get('xpub3'):
-            #     self.accounts[k] = BIP32_Account_2of3(v)
-            # elif v.get('xpub2'):
-            #     self.accounts[k] = BIP32_Account_2of2(v)
-            # elif v.get('xpub'):
-            #     self.accounts[k] = BIP32_Account(v)
-            # elif v.get('pending'):
-            #     self.accounts[k] = PendingAccount(v)
             else:
                 print_error("cannot load account", v)
 
@@ -1857,13 +1856,13 @@ class StealthOldWallet(OldWallet):
 
     def receive_stealth_history_callback(self, tx_list):
         for tx in tx_list:
-            print "rcv sx cbk", tx
             addr, ephemkey,  = tx['address'], tx['ephemkey']
             tx_hash, tx_height = tx['txid'], tx['height']
             print_error('receive_stealth_history_callback', addr, ephemkey, tx_hash, tx_height)
             if self.is_mine_stealth_tx(addr, ephemkey):
+                self.last_stealth_height = tx_height
+                self.storage.put('last_stealth_height', self.last_stealth_height)
                 if self.verifier:
-                    print "add to verifier"
                     self.verifier.add(tx_hash, tx_height)
                 self.receive_history_callback(addr, [(tx_hash, tx_height)])
 
