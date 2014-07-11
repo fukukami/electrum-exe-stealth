@@ -190,6 +190,9 @@ def hash_160_to_bc_address(h160, addrtype = 33):
     return b58encode(addr)
 
 def bc_address_to_hash_160(addr):
+    if addr == "0":
+        # make it out of prefix range
+        return 256, None
     bytes = b58decode(addr, 25)
     return ord(bytes[0]), bytes[1:21]
 
@@ -220,7 +223,7 @@ def b58encode(v):
 
     return (__b58chars[0]*nPad) + result
 
-def b58decode(v, length):
+def b58decode(v, length=None):
     """ decode v into a string of len bytes."""
     long_value = 0L
     for (i, c) in enumerate(v[::-1]):

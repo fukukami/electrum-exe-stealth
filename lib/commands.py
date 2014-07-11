@@ -22,6 +22,7 @@ from bitcoin import *
 from decimal import Decimal
 import bitcoin
 from transaction import Transaction
+import stealth
 
 class Command:
     def __init__(self, name, min_args, max_args, requires_network, requires_wallet, requires_password, description, syntax = '', options_syntax = ''):
@@ -281,7 +282,7 @@ class Commands:
     def _mktx(self, outputs, fee = None, change_addr = None, domain = None):
 
         for to_address, amount in outputs:
-            if not is_valid(to_address):
+            if not is_valid(to_address) and not stealth.is_valid(to_address):
                 raise Exception("Invalid Execoin address", to_address)
 
         if change_addr:

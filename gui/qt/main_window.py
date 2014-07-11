@@ -40,7 +40,7 @@ from electrum_exe import Transaction
 from electrum_exe import mnemonic
 from electrum_exe import util, bitcoin, commands, Interface, Wallet
 from electrum_exe import SimpleConfig, Wallet, WalletStorage
-
+from electrum_exe import stealth
 
 from electrum_exe import bmp, pyqrnative
 
@@ -779,7 +779,7 @@ class ElectrumWindow(QMainWindow):
             # label or alias, with address in brackets
             m = re.match('(.*?)\s*\<([1-9A-HJ-NP-Za-km-z]{26,})\>', r)
             to_address = m.group(2) if m else r
-            if not is_valid(to_address):
+            if not is_valid(to_address) and not stealth.is_valid(to_address):
                 QMessageBox.warning(self, _('Error'), _('Invalid Execoin Address') + ':\n' + to_address, _('OK'))
                 return
 
@@ -1071,6 +1071,17 @@ class ElectrumWindow(QMainWindow):
         self.wallet.delete_pending_account(k)
         self.update_receive_tab()
 
+    def create_stealth_menu(self, position, k, item):
+        menu = QMenu()
+        menu.addAction(_("Copy to clipboard"), lambda: self.app.clipboard().setText(k))
+        if item.isExpanded():
+            menu.addAction(_("Minimize"), lambda: self.account_set_expanded(item, k, False))
+        else:
+            menu.addAction(_("Maximize"), lambda: self.account_set_expanded(item, k, True))
+        menu.addAction(_("QR code"), lambda: self.show_qrcode("execoin:" + k, _("Address")) )
+        menu.addAction(_("Edit label"), lambda: self.edit_label(True))
+        menu.exec_(self.receive_list.viewport().mapToGlobal(position))
+
     def create_receive_menu(self, position):
         # fixme: this function apparently has a side effect.
         # if it is not called the menu pops up several times
@@ -1084,6 +1095,9 @@ class ElectrumWindow(QMainWindow):
             if not item: return
 
             addr = addrs[0]
+            if stealth.is_valid(addr):
+                self.create_stealth_menu(position, addr, item)
+                return
             if not is_valid(addr):
                 k = str(item.data(0,32).toString())
                 if k:
@@ -1219,6 +1233,23 @@ class ElectrumWindow(QMainWindow):
             else:
                 account_item = l
 
+            #stealth wallet
+            if 's/' in str(k):
+                for stealth_address in account.get_stealth_addresses():
+                    account_item.setExpanded(True)
+                    c, u = self.wallet.get_addr_balance(stealth_address)
+                    stealth_address_item = QTreeWidgetItem( [ stealth_address, str(c), '', ''] )
+                    self.update_receive_item(stealth_address_item)
+                    account_item.addChild(stealth_address_item)
+                    for address in account.get_real_from_stealth(stealth_address):
+                        c, u = self.wallet.get_addr_balance(address)
+                        num_tx = str(0)
+                        item = QTreeWidgetItem( [ address, str(c), str(u), num_tx] )
+                        self.update_receive_item(item)
+                        stealth_address_item.addChild(item)
+                continue
+
+            #common wallet
             sequences = [0,1] if account.has_change() else [0]
             for is_change in sequences:
                 if len(sequences) > 1:
@@ -1407,7 +1438,7 @@ class ElectrumWindow(QMainWindow):
         address = str(line1.text())
         label = unicode(line2.text())
 
-        if not is_valid(address):
+        if not is_valid(address) and not stealth.is_valid(address):
             QMessageBox.warning(self, _('Error'), _('Invalid Address'), _('OK'))
             return
 

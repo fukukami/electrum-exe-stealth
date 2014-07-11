@@ -166,6 +166,14 @@ class Interface(threading.Thread):
                 result = params[0]
                 params = []
 
+            elif method == 'blockchain.stealth.subscribe':
+                result = params[0]
+                params = []
+
+            elif method == 'blockchain.stealth.fetch':
+                result = params[0]
+                params = []
+
             elif method == 'blockchain.address.subscribe':
                 addr = params[0]
                 result = params[1]

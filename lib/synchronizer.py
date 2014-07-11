@@ -22,6 +22,7 @@ import Queue
 import bitcoin
 from util import print_error
 from transaction import Transaction
+import stealth
 
 
 class WalletSynchronizer(threading.Thread):
@@ -36,6 +37,9 @@ class WalletSynchronizer(threading.Thread):
         self.lock = threading.Lock()
         self.queue = Queue.Queue()
 
+        self.last_stealth_height = stealth.GENESIS
+        self.is_stealth_fetching = False
+
     def stop(self):
         with self.lock: self.running = False
 
@@ -49,6 +53,11 @@ class WalletSynchronizer(threading.Thread):
             messages.append(('blockchain.address.subscribe', [addr]))
         self.network.subscribe( messages, lambda i,r: self.queue.put(r))
 
+    def subscribe_to_stealth(self):
+        self.network.subscribe([ ('blockchain.stealth.subscribe',[]) ], lambda i,r: self.queue.put(r))
+
+    def stealth_fetch(self, height=0):
+        self.network.send([ ('blockchain.stealth.fetch',[height]) ], lambda i,r: self.queue.put(r))
 
     def run(self):
         with self.lock:
@@ -82,6 +91,8 @@ class WalletSynchronizer(threading.Thread):
 
         # subscriptions
         self.subscribe_to_addresses(self.wallet.addresses(True))
+        self.subscribe_to_stealth()
+        self.stealth_fetch(self.wallet.last_stealth_height)
 
         while self.is_running():
             # 1. create new addresses
@@ -97,6 +108,13 @@ class WalletSynchronizer(threading.Thread):
                     self.network.send([ ('blockchain.transaction.get',[tx_hash, tx_height]) ], lambda i,r: self.queue.put(r))
                     requested_tx.append( (tx_hash, tx_height) )
             missing_tx = []
+
+            # request missing stealth transactions
+            if self.wallet.last_stealth_height < self.last_stealth_height \
+                and not self.is_stealth_fetching:
+                print_error("stealth catching from block", self.wallet.last_stealth_height)
+                self.is_stealth_fetching = True
+                self.stealth_fetch(self.wallet.last_stealth_height)
 
             # detect if situation has changed
             if self.network.is_up_to_date() and self.queue.empty():
@@ -143,7 +161,6 @@ class WalletSynchronizer(threading.Thread):
 
             elif method == 'blockchain.address.get_history':
                 addr = params[0]
-                print_error("receiving history", addr, result)
                 if result == ['*']:
                     assert requested_histories.pop(addr) == '*'
                     self.wallet.receive_history_callback(addr, result)
@@ -173,6 +190,21 @@ class WalletSynchronizer(threading.Thread):
                         if self.wallet.transactions.get(tx_hash) is None:
                             if (tx_hash, tx_height) not in requested_tx and (tx_hash, tx_height) not in missing_tx:
                                 missing_tx.append( (tx_hash, tx_height) )
+
+            elif method == 'blockchain.stealth.fetch':
+                sx_list = sorted(result, key=lambda k: k['height'])
+                self.wallet.receive_stealth_history_callback(sx_list)
+                if len(sx_list) > 0:
+                    last_height = sx_list[-1].get('height', stealth.GENESIS)
+                    print_error("sync saving last height", last_height, sx_list[-1])
+                    self.wallet.save_last_stealth_height(last_height)
+                self.was_updated = True
+                self.is_stealth_fetching = False
+
+            elif method == 'blockchain.stealth.subscribe':
+                self.wallet.receive_stealth_history_callback(result)
+                self.last_stealth_height = result[0]['height']
+                self.was_updated = True
 
             elif method == 'blockchain.transaction.get':
                 tx_hash = params[0]

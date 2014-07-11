@@ -38,6 +38,7 @@ from transaction import Transaction
 from plugins import run_hook
 import bitcoin
 from synchronizer import WalletSynchronizer
+import stealth
 
 COINBASE_MATURITY = 100
 DUST_THRESHOLD = 0
@@ -626,7 +627,10 @@ class Abstract_Wallet:
             if h == ['*']: continue
             for tx_hash, tx_height in h:
                 tx = self.transactions.get(tx_hash)
-                if tx is None: raise Exception("Wallet not synchronized")
+                if tx is None:
+                    print "tx domain", domain
+                    print "tx", tx_height, tx_hash, tx
+                    raise Exception("Wallet not synchronized")
                 is_coinbase = tx.inputs[0].get('prevout_hash') == '0'*64
                 for o in tx.d.get('outputs'):
                     output = o.copy()
@@ -765,7 +769,7 @@ class Abstract_Wallet:
             history = self.transactions.items()
             history.sort(key = lambda x: self.verifier.get_txpos(x[0]))
             result = []
-    
+
             balance = 0
             for tx_hash, tx in history:
                 is_relevant, is_mine, v, fee = self.get_tx_value(tx, account)
@@ -835,10 +839,15 @@ class Abstract_Wallet:
 
         return default_label
 
+    def stealth_outputs(self, stealth_address, amount):
+        # todo proper key generation
+        r = stealth.initiate_from_stealth(stealth_address)
+        ekey = "0600000000" + r['ephem_key'] # add stealth metadata
+        return [('0', ekey), (r['address'], amount)]
 
     def make_unsigned_transaction(self, outputs, fee=None, change_addr=None, domain=None ):
         for address, x in outputs:
-            assert is_valid(address), "Address " + address + " is invalid!"
+            assert not (not is_valid(address) and not stealth.is_valid(address)), "Address " + address + " is invalid!"
         amount = sum( map(lambda x:x[1], outputs) )
         inputs, total, fee = self.choose_tx_inputs( amount, fee, len(outputs), domain )
         if not inputs:
@@ -846,6 +855,13 @@ class Abstract_Wallet:
         for txin in inputs:
             self.add_input_info(txin)
         outputs = self.add_tx_change(inputs, outputs, amount, fee, total, change_addr)
+        # replace all stealth addresses with proper outputs
+        for i, output in enumerate(outputs):
+            address, amount = output
+            if stealth.is_valid(address):
+                stealth_outputs = self.stealth_outputs(address, amount)
+                outputs[i] = stealth_outputs[1]
+                outputs.insert(i, stealth_outputs[0])
         return Transaction.from_io(inputs, outputs)
 
 
@@ -1252,12 +1268,15 @@ class Deterministic_Wallet(Abstract_Wallet):
         def wait_for_wallet():
             self.set_up_to_date(False)
             while not self.is_up_to_date():
-                msg = "%s\n%s %d\n%s %.1f"%(
+                msg = "%s\n%s %d\n%s %.1f\n%s %d"%(
                     _("Please wait..."),
                     _("Addresses generated:"),
                     len(self.addresses(True)), 
                     _("Kilobytes received:"), 
-                    self.network.interface.bytes_received/1024.)
+                    self.network.interface.bytes_received/1024.,
+                    _("Last stealth transaction found in block "),
+                    self.last_stealth_height
+                )
 
                 apply(callback, (msg,))
                 time.sleep(0.1)
@@ -1605,11 +1624,290 @@ class OldWallet(Deterministic_Wallet):
                     pubkey = public_key_from_private_key(sec)
                     keypairs[pubkey] = sec
 
-
-
     def check_pending_accounts(self):
         pass
 
+
+class StealthOldWallet(OldWallet):
+    def __init__(self, storage):
+        self.storage = storage
+        self.electrum_version = ELECTRUM_VERSION
+        self.gap_limit_for_change = 3 # constant
+        # saved fields
+        self.seed_version          = storage.get('seed_version', NEW_SEED_VERSION)
+        self.gap_limit             = storage.get('gap_limit', 5)
+        self.use_change            = storage.get('use_change',True)
+        self.use_encryption        = storage.get('use_encryption', False)
+        self.seed                  = storage.get('seed', '')               # encrypted
+        self.labels                = storage.get('labels', {})
+        self.frozen_addresses      = storage.get('frozen_addresses',[])
+        self.addressbook           = storage.get('contacts', [])
+
+        self.history               = storage.get('addr_history',{})        # address -> list(txid, height)
+
+        self.fee                   = int(storage.get('fee_per_kb',100000))
+
+        self.master_public_keys = storage.get('master_public_keys',{})
+        self.master_private_keys = storage.get('master_private_keys', {})
+
+        self.next_addresses = storage.get('next_addresses',{})
+
+        self.last_stealth_height = storage.get('last_stealth_height', stealth.GENESIS)
+
+        # This attribute is set when wallet.start_threads is called.
+        self.synchronizer = None
+
+        self.load_accounts()
+
+        self.transactions = {}
+        tx_list = self.storage.get('transactions',{})
+        for k,v in tx_list.items():
+            try:
+                tx = Transaction(v)
+            except Exception:
+                print_msg("Warning: Cannot deserialize transactions. skipping")
+                continue
+
+            self.add_extra_addresses(tx)
+            self.transactions[k] = tx
+
+        for h,tx in self.transactions.items():
+            if not self.check_new_tx(h, tx):
+                print_error("removing unreferenced tx", h)
+                self.transactions.pop(h)
+
+
+        # not saved
+        self.prevout_values = {}     # my own transaction outputs
+        self.spent_outputs = []
+
+        # spv
+        self.verifier = None
+
+        # there is a difference between wallet.up_to_date and interface.is_up_to_date()
+        # interface.is_up_to_date() returns true when all requests have been answered and processed
+        # wallet.up_to_date is true when the wallet is synchronized (stronger requirement)
+
+        self.up_to_date = False
+        self.lock = threading.Lock()
+        self.transaction_lock = threading.Lock()
+        self.tx_event = threading.Event()
+
+        for tx_hash, tx in self.transactions.items():
+            self.update_tx_outputs(tx_hash)
+
+    def get_master_public_key(self):
+        return self.storage.get("master_public_key")
+
+    def create_accounts(self, password):
+        self.create_master_keys(password)
+        mpk = self.storage.get("master_public_key")
+        print_error("create account", mpk)
+        self.create_account(mpk)
+
+    def create_account(self, mpk):
+        self.accounts[0] = OldAccount({'mpk':mpk, 0:[], 1:[]})
+        self.accounts['s/0/'] = StealthAccount({
+            'master_private_scan': self.get_master_private_key_('s/0/0/'),
+            'master_public_scan': self.get_master_public_key_('s/0/0/'),
+            'master_private_spend': self.get_master_private_key_('s/0/1/'),
+            'master_public_spend': self.get_master_public_key_('s/0/1/'),
+        })
+        self.save_accounts()
+
+    def create_watching_only_wallet(self, K0):
+        self.seed_version = OLD_SEED_VERSION
+        self.storage.put('seed_version', self.seed_version, True)
+        # todo watch only stealth wallet
+        self.create_account(K0)
+
+    def add_master_public_key(self, name, mpk):
+        self.master_public_keys[name] = mpk
+        self.storage.put('master_public_keys', self.master_public_keys, True)
+
+    def add_master_private_key(self, name, xpriv, password):
+        self.master_private_keys[name] = pw_encode(xpriv, password)
+        self.storage.put('master_private_keys', self.master_private_keys, True)
+
+    def get_master_public_key_(self, name=None):
+        if name is None: name = "s/"
+        return self.storage.get('master_public_keys', None)[name]
+
+    def get_master_private_key_(self, name=None):
+        if name is None: name = "s/"
+        return self.storage.get('master_private_keys', None)[name]
+
+    def add_master_keys(self, root, account_id, password, storage_password):
+        x = self.master_private_keys.get(root)
+        if x:
+            master_xpriv = pw_decode(x, password)
+            xpriv, xpub = bip32_private_derivation(master_xpriv, root, account_id)
+            self.add_master_public_key(account_id, xpub)
+            self.add_master_private_key(account_id, xpriv, storage_password)
+        else:
+            master_xpub = self.master_public_keys[root]
+            xpub = bip32_public_derivation(master_xpub, root, account_id)
+            self.add_master_public_key(account_id, xpub)
+        return xpub
+
+    def create_master_keys(self, password):
+        seed = self.get_seed(password)
+        mpk = OldAccount.mpk_from_seed(seed)
+        self.storage.put('master_public_key', mpk, True)
+        xpriv, xpub = bip32_root(mnemonic_to_seed(self.get_seed(password),'').encode('hex'))
+        self.add_master_public_key("s/", xpub)
+        self.add_master_private_key("s/", xpriv, password)
+        # we don't want scan_key (s/0/0/) to be encoded with password
+        self.add_master_keys('s/', 's/0/0/', password, None)
+        self.add_master_keys('s/', 's/0/1/', password, password)
+
+    def find_root_by_master_key(self, xpub):
+        for key, xpub2 in self.master_public_keys.items():
+            if "s/" in key:continue
+            if xpub == xpub2:
+                return key
+
+    def addresses(self, include_change = True, _next=True):
+        o = []
+        for a in self.accounts.keys():
+            o += self.get_account_addresses(a, include_change)
+
+        if _next:
+            for addr in self.next_addresses.values():
+                if addr not in o:
+                    o += [addr]
+        return o
+
+    def save_accounts(self):
+        d = {}
+        for k, v in self.accounts.items():
+            d[k] = v.dump()
+        self.storage.put('accounts', d, True)
+
+    def load_accounts(self):
+        self.accounts = {}
+        self.imported_keys = self.storage.get('imported_keys',{})
+        if self.imported_keys:
+            print_error("cannot load imported keys")
+
+        d = self.storage.get('accounts', {})
+        for k, v in d.items():
+            if k == 0:
+                v['mpk'] = self.storage.get('master_public_key')
+                self.accounts[k] = OldAccount(v)
+            elif 's/' in str(k):
+                v['master_private_scan'] = self.get_master_private_key_('s/0/0/')
+                v['master_public_scan'] = self.get_master_public_key_('s/0/0/')
+                v['master_private_spend'] = self.get_master_private_key_('s/0/1/')
+                v['master_public_spend'] = self.get_master_public_key_('s/0/1/')
+                self.accounts[k] = StealthAccount(v)
+            elif v.get('imported'):
+                self.accounts[k] = ImportedAccount(v)
+            else:
+                print_error("cannot load account", v)
+
+    def is_seeded(self, account):
+        if type(account) is int:
+            return self.seed is not None
+        if 's/' in account:
+            return False
+
+        for root in self.get_roots(account):
+            if root not in self.master_private_keys.keys():
+                return False
+        return True
+
+    def synchronize_stealth_sequence(self, account, for_change = False):
+        limit = self.gap_limit
+        new_addresses = []
+        addresses = account.get_stealth_addresses()
+        while len(addresses) < limit:
+            addresses = account.get_stealth_addresses()
+            address = account.create_new_stealth_address()
+            # self.history[address] = []
+            new_addresses.append( address )
+        return new_addresses
+
+    def synchronize_stealth_account(self, account):
+        new = []
+        new += self.synchronize_stealth_sequence(account)
+        return new
+
+    def synchronize(self):
+        self.check_pending_accounts()
+        new = []
+        new_stealth = []
+        for account in self.accounts.values():
+            if type(account) in [ImportedAccount, PendingAccount]:
+                continue
+            if type(account) in [StealthAccount]:
+                new_stealth += self.synchronize_stealth_account(account)
+                continue
+            new += self.synchronize_account(account)
+        if new or new_stealth:
+            self.save_accounts()
+            self.storage.put('addr_history', self.history, True)
+        return new
+
+    def is_mine_stealth_tx(self, addr, ephemkey):
+        return self.accounts['s/0/'].is_mine_stealth_tx(addr, ephemkey)
+
+    def save_last_stealth_height(self, tx_height):
+        self.last_stealth_height = tx_height
+        self.storage.put('last_stealth_height', tx_height)
+
+    def receive_stealth_history_callback(self, tx_list):
+        for tx in tx_list:
+            addr, ephemkey,  = tx['address'], tx['ephemkey']
+            tx_hash, tx_height = tx['txid'], tx['height']
+            print_error('receive_stealth_history_callback', addr, ephemkey, tx_hash, tx_height)
+            if self.is_mine_stealth_tx(addr, ephemkey):
+                if self.verifier:
+                    self.verifier.add(tx_hash, tx_height)
+                self.receive_history_callback(addr, [(tx_hash, tx_height)])
+
+    def get_addr_balance(self, address):
+        if stealth.is_valid(address):
+            c, u = 0, 0
+            addr_list = self.accounts['s/0/'].get_real_from_stealth(address)
+            for addr in addr_list:
+                ca, ua = Abstract_Wallet.get_addr_balance(self, addr)
+                c += ca
+                u += ua
+            return c, u
+        return Abstract_Wallet.get_addr_balance(self, address)
+
+    def is_mine(self, address):
+        if address in self.addresses(True):
+            return True
+        for a in self.accounts:
+            if (type(a) is str) and ('s/' in a):
+                ac = self.accounts[a]
+                if address in ac.get_stealth_addresses():
+                    return True
+        return False
+
+    def update_password(self, old_password, new_password):
+        if new_password == '':
+            new_password = None
+
+        if self.has_seed():
+            decoded = self.get_seed(old_password)
+            self.seed = pw_encode( decoded, new_password)
+            self.storage.put('seed', self.seed, True)
+
+        imported_account = self.accounts.get(IMPORTED_ACCOUNT)
+        if imported_account:
+            imported_account.update_password(old_password, new_password)
+            self.save_accounts()
+
+        for k in ['s/', 's/0/1/']:
+            v = self.get_master_private_key_(k)
+            b = pw_decode(v, old_password)
+            self.add_master_private_key(k, b, new_password)
+
+        self.use_encryption = (new_password != None)
+        self.storage.put('use_encryption', self.use_encryption,True)
 
 # former WalletFactory
 class Wallet(object):
@@ -1640,7 +1938,8 @@ class Wallet(object):
                 seed_version = OLD_SEED_VERSION if len(storage.get('master_public_key')) == 128 else NEW_SEED_VERSION
 
         if seed_version == OLD_SEED_VERSION:
-            return OldWallet(storage)
+            # return OldWallet(storage)
+            return StealthOldWallet(storage)
         elif seed_version == NEW_SEED_VERSION:
             return NewWallet(storage)
         else:
@@ -1701,7 +2000,8 @@ class Wallet(object):
     @classmethod
     def from_seed(self, seed, storage):
         if is_old_seed(seed):
-            klass = OldWallet
+            # klass = OldWallet
+            klass = StealthOldWallet
         elif is_new_seed(seed):
             klass = NewWallet
         w = klass(storage)

@@ -19,8 +19,8 @@
 from bitcoin import *
 from i18n import _
 from transaction import Transaction
-
-
+import stealth
+import keys
 
 class Account(object):
     def __init__(self, v):
@@ -86,7 +86,7 @@ class ImportedAccount(Account):
         for_change, i = sequence
         assert for_change == 0
         addr = self.get_addresses(0)[i]
-        return self.keypairs[addr][i][0]
+        return self.keypairs[addr][0]
 
     def get_private_key(self, sequence, wallet, password):
         from wallet import pw_decode
@@ -206,6 +206,130 @@ class OldAccount(Account):
         a, b = sequence
         return 'old(%s,%d,%d)'%(self.mpk.encode('hex'),a,b)
 
+
+class StealthAccount(OldAccount):
+    def __init__(self, v):
+        for k, val in v.items():
+            self.__setattr__(k, val)
+        self.stealth_addresses = v.get('stealth_addresses', [])
+        self.stealth_to_real = v.get('stealth_to_real', {})
+        self.stealth_transactions = v.get('stealth_transactions', [])
+        self.addresses = v.get('addresses', [])
+        pass
+
+    def dump(self):
+        return {
+            'addresses': self.addresses,
+            'stealth_addresses': self.stealth_addresses,
+            'stealth_to_real': self.stealth_to_real,
+            'stealth_transactions': self.stealth_transactions,
+        }
+
+    def get_addresses(self, for_change=False):
+        if not for_change:
+            return self.addresses[:]
+        return []
+
+    def get_pubkey(self, for_change, n):
+        addr = self.addresses[n]
+        ephemkey = None
+        address = None
+        for i in self.stealth_transactions:
+            if i.get('address') == addr:
+                ephemkey = i.get('ephemkey', None)
+                address = i.get('stealth_address', None)
+        address_n = self.stealth_addresses.index(address)
+        scan_priv = self.get_privkey_from_x(self.master_private_scan, address_n)
+        spend_pub = self.get_pubkey_from_x(self.master_public_spend, address_n)
+        pubkey = stealth.uncover_pubkey(ephemkey, scan_priv, spend_pub)
+        return pubkey
+
+    def get_private_key(self, sequence, wallet, password):
+        addr = self.addresses[sequence[1]]
+        ephemkey = None
+        address = None
+        for i in self.stealth_transactions:
+            if i.get('address') == addr:
+                ephemkey = i.get('ephemkey', None)
+                address = i.get('stealth_address', None)
+        address_n = self.stealth_addresses.index(address)
+        scan_priv = self.get_privkey_from_x(self.master_private_scan, address_n)
+        master_private_spend = pw_decode(self.master_private_spend, password)
+        spend_priv = self.get_privkey_from_x(master_private_spend, address_n)
+        secret = stealth.uncover_secret(ephemkey, scan_priv, spend_priv)
+        secret = stealth.secret_to_wif(secret, True)
+        return [secret]
+
+    def get_pubkey_from_x(self, xpub, n):
+        _, _, _, c, cK = deserialize_xkey(xpub)
+        cK, c = CKD_pub(cK, c, n)
+        return cK.encode('hex')
+
+    def get_privkey_from_x(self, xpriv, n):
+        _, _, _, c, k = deserialize_xkey(xpriv)
+        k, chain = CKD_priv(k, c, n)
+        return k.encode('hex')
+
+    def get_scan_secret_from_stealth(self, address):
+        scan_pubkey = stealth.stealth_to_pubs(address)['scan_pubkey']
+        n = 0
+        scan_priv = self.get_privkey_from_x(self.master_private_scan, n)
+
+    def create_new_stealth_address(self):
+        addresses = self.stealth_addresses
+        n = len(addresses)
+        #address = self.get_address( for_change, n)
+        scan_pub = self.get_pubkey_from_x(self.master_public_scan, n)
+        spend_pub = self.get_pubkey_from_x(self.master_public_spend, n)
+        address = stealth.pubs_to_stealth(scan_pub, spend_pub)
+        self.stealth_addresses.append(address)
+        return address
+
+    def get_stealth_addresses(self):
+        return self.stealth_addresses[:]
+
+    def get_index_of_stealth_address(self, address):
+        if address in self.stealth_addresses:
+            return self.stealth_addresses.index(address)
+        return None
+
+    def get_real_from_stealth(self, stealth_address):
+        return self.stealth_to_real.get(stealth_address, [])
+
+    def get_name(self, k):
+        return _('Stealth account')
+
+    def add_real_address(self, stealth, real):
+        ra = self.stealth_to_real.get(stealth, [])
+        if real not in ra:
+            ra.append(real)
+        self.stealth_to_real[stealth] = ra
+        if real not in self.addresses:
+            self.addresses.append(real)
+
+    def add_stealth_tx(self, stealth_address, address, ephemkey):
+        sx = {
+            'stealth_address': stealth_address,
+            'address': address,
+            'ephemkey': ephemkey,
+        }
+        if sx not in self.stealth_transactions:
+            self.stealth_transactions.append(sx)
+
+    def is_mine_stealth_tx(self, addr, ephemkey):
+        stealth_addresses = self.get_stealth_addresses()
+        for address in stealth_addresses:
+            n = self.get_index_of_stealth_address(address)
+            scan_secret = self.get_privkey_from_x(self.master_private_scan, n)
+            spend_pubkey = stealth.stealth_to_pubs(address)['spend_pubkey']
+            if stealth.uncover_address(ephemkey, scan_secret, spend_pubkey) == addr:
+                self.add_real_address(address, addr)
+                self.add_stealth_tx(address, addr, ephemkey)
+                return True
+        return False
+
+    def get_keyID(self, *sequence):
+        pass
 
 
 class BIP32_Account(Account):
