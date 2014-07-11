@@ -1652,7 +1652,7 @@ class StealthOldWallet(OldWallet):
 
         self.next_addresses = storage.get('next_addresses',{})
 
-        self.last_stealth_height = storage.get('last_stealth_height', 0)
+        self.last_stealth_height = storage.get('last_stealth_height', 270000)
 
         # This attribute is set when wallet.start_threads is called.
         self.synchronizer = None
@@ -1700,14 +1700,9 @@ class StealthOldWallet(OldWallet):
         return self.storage.get("master_public_key")
 
     def create_accounts(self, password):
-        print "create account", self.seed
-        seed = pw_decode(self.seed, password)
-        mpk = OldAccount.mpk_from_seed(seed)
-        # stealth keys
         self.create_master_keys(password)
-        self.add_master_keys('s/', 's/0/0/', None)
-        self.add_master_keys('s/', 's/0/1/', password)
-        print "create account", mpk
+        mpk = self.storage.get("master_public_key")
+        print_error("create account", mpk)
         self.create_account(mpk)
 
     def create_account(self, mpk):
@@ -1742,13 +1737,13 @@ class StealthOldWallet(OldWallet):
         if name is None: name = "s/"
         return self.storage.get('master_private_keys', None)[name]
 
-    def add_master_keys(self, root, account_id, password):
+    def add_master_keys(self, root, account_id, password, storage_password):
         x = self.master_private_keys.get(root)
         if x:
-            master_xpriv = pw_decode(x, password )
+            master_xpriv = pw_decode(x, password)
             xpriv, xpub = bip32_private_derivation(master_xpriv, root, account_id)
             self.add_master_public_key(account_id, xpub)
-            self.add_master_private_key(account_id, xpriv, password)
+            self.add_master_private_key(account_id, xpriv, storage_password)
         else:
             master_xpub = self.master_public_keys[root]
             xpub = bip32_public_derivation(master_xpub, root, account_id)
@@ -1762,6 +1757,9 @@ class StealthOldWallet(OldWallet):
         xpriv, xpub = bip32_root(mnemonic_to_seed(self.get_seed(password),'').encode('hex'))
         self.add_master_public_key("s/", xpub)
         self.add_master_private_key("s/", xpriv, password)
+        # we don't want scan_key (s/0/0/) to be encoded with password
+        self.add_master_keys('s/', 's/0/0/', password, None)
+        self.add_master_keys('s/', 's/0/1/', password, password)
 
     def find_root_by_master_key(self, xpub):
         for key, xpub2 in self.master_public_keys.items():
@@ -1887,6 +1885,27 @@ class StealthOldWallet(OldWallet):
                     return True
         return False
 
+    def update_password(self, old_password, new_password):
+        if new_password == '':
+            new_password = None
+
+        if self.has_seed():
+            decoded = self.get_seed(old_password)
+            self.seed = pw_encode( decoded, new_password)
+            self.storage.put('seed', self.seed, True)
+
+        imported_account = self.accounts.get(IMPORTED_ACCOUNT)
+        if imported_account:
+            imported_account.update_password(old_password, new_password)
+            self.save_accounts()
+
+        for k in ['s/', 's/0/1/']:
+            v = self.get_master_private_key_(k)
+            b = pw_decode(v, old_password)
+            self.add_master_private_key(k, b, new_password)
+
+        self.use_encryption = (new_password != None)
+        self.storage.put('use_encryption', self.use_encryption,True)
 
 # former WalletFactory
 class Wallet(object):

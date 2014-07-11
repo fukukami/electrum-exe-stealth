@@ -254,7 +254,8 @@ class StealthAccount(OldAccount):
                 address = i.get('stealth_address', None)
         address_n = self.stealth_addresses.index(address)
         scan_priv = self.get_privkey_from_x(self.master_private_scan, address_n)
-        spend_priv = self.get_privkey_from_x(self.master_private_spend, address_n)
+        master_private_spend = pw_decode(self.master_private_spend, password)
+        spend_priv = self.get_privkey_from_x(master_private_spend, address_n)
         secret = stealth.uncover_secret(ephemkey, scan_priv, spend_priv)
         secret = stealth.secret_to_wif(secret, True)
         return [secret]
