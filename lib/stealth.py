@@ -22,7 +22,7 @@ import keys
 VERSION_PREFIX = '0b'
 VERSION_PREFIX_TESTNET = '0c'
 METADATA = '0600000000'
-GENESIS = 270000
+GENESIS = 273500
 
 def is_valid(addr):
     return is_address(addr)
