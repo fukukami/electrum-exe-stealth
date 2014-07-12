@@ -700,7 +700,7 @@ class Abstract_Wallet:
                 address = inputs[0].get('address')
                 account, _ = self.get_address_index(address)
 
-                if not self.use_change or account == IMPORTED_ACCOUNT or account.startswith('s/'):
+                if not self.use_change or account == IMPORTED_ACCOUNT or str(account).startswith('s/'):
                     change_addr = inputs[-1]['address']
                 else:
                     change_addr = self.accounts[account].get_addresses(1)[-self.gap_limit_for_change]
