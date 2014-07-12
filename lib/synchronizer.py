@@ -57,6 +57,7 @@ class WalletSynchronizer(threading.Thread):
         self.network.subscribe([ ('blockchain.stealth.subscribe',[]) ], lambda i,r: self.queue.put(r))
 
     def stealth_fetch(self, height=0):
+        print "stealth fetch", height
         self.network.send([ ('blockchain.stealth.fetch',[height]) ], lambda i,r: self.queue.put(r))
 
     def run(self):

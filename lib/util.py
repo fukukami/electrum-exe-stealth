@@ -43,11 +43,11 @@ def print_json(obj):
 
 def user_dir():
     if "HOME" in os.environ:
-        return os.path.join(os.environ["HOME"], ".electrum-exe")
+        return os.path.join(os.environ["HOME"], ".electrum-exe.stealth")
     elif "APPDATA" in os.environ:
-        return os.path.join(os.environ["APPDATA"], "Electrum-EXE")
+        return os.path.join(os.environ["APPDATA"], "Electrum-EXE.stealth")
     elif "LOCALAPPDATA" in os.environ:
-        return os.path.join(os.environ["LOCALAPPDATA"], "Electrum-EXE")
+        return os.path.join(os.environ["LOCALAPPDATA"], "Electrum-EXE.stealth")
     elif 'ANDROID_DATA' in os.environ:
         return "/sdcard/electrum-exe/"
     else:
