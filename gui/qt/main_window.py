@@ -193,7 +193,7 @@ class ElectrumWindow(QMainWindow):
         self.accounts_expanded = self.wallet.storage.get('accounts_expanded',{})
         self.current_account = self.wallet.storage.get("current_account", None)
 
-        title = 'Electrum-EXE ' + self.wallet.electrum_version + '  -  ' + self.wallet.storage.path
+        title = 'Electrum-EXE Stealth ' + self.wallet.electrum_version + '  -  ' + self.wallet.storage.path
         if self.wallet.is_watching_only(): title += ' [%s]' % (_('watching only'))
         self.setWindowTitle( title )
         self.update_wallet()
@@ -334,11 +334,11 @@ class ElectrumWindow(QMainWindow):
         self.setMenuBar(menubar)
 
     def show_about(self):
-        QMessageBox.about(self, "Electrum-EXE",
+        QMessageBox.about(self, "Electrum-EXE Stealth",
             _("Version")+" %s" % (self.wallet.electrum_version) + "\n\n" + _("Electrum's focus is speed, with low resource usage and simplifying Execoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Execoin system."))
 
     def show_report_bug(self):
-        QMessageBox.information(self, "Electrum-EXE - " + _("Reporting Bugs"),
+        QMessageBox.information(self, "Electrum-EXE Stealth - " + _("Reporting Bugs"),
             _("Please report any bugs as issues on github:")+" <a href=\"https://github.com/fukukami/electrum-exe/issues\">https://github.com/fukukami/electrum-exe/issues</a>")
 
 
@@ -370,7 +370,7 @@ class ElectrumWindow(QMainWindow):
                           self.notify(_("New transaction received. %(amount)s %(unit)s") % { 'amount' : self.format_amount(v), 'unit' : self.base_unit()})
 
     def notify(self, message):
-        self.tray.showMessage("Electrum-EXE", message, QSystemTrayIcon.Information, 20000)
+        self.tray.showMessage("Electrum-EXE Stealth", message, QSystemTrayIcon.Information, 20000)
 
 
 

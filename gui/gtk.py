@@ -29,7 +29,7 @@ from electrum_exe.bitcoin import is_valid
 from electrum_exe import mnemonic, pyqrnative, WalletStorage, Wallet
 
 Gdk.threads_init()
-APP_NAME = "Electrum-EXE"
+APP_NAME = "Electrum-EXE Stealth"
 import platform
 MONOSPACE_FONT = 'Lucida Console' if platform.system() == 'Windows' else 'monospace'
 
