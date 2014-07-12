@@ -225,7 +225,7 @@ class StealthAccount(OldAccount):
             'stealth_transactions': self.stealth_transactions,
         }
 
-    def get_addresses(self, for_change=False):
+    def get_addresses(self, for_change):
         if not for_change:
             return self.addresses[:]
         return []
