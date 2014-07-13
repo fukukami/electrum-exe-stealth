@@ -93,7 +93,7 @@ class WalletSynchronizer(threading.Thread):
         # subscriptions
         self.subscribe_to_addresses(self.wallet.addresses(True))
         self.subscribe_to_stealth()
-        self.stealth_fetch(self.wallet.last_stealth_height)
+        # self.stealth_fetch(self.wallet.last_stealth_height)
 
         while self.is_running():
             # 1. create new addresses
@@ -111,8 +111,12 @@ class WalletSynchronizer(threading.Thread):
             missing_tx = []
 
             # request missing stealth transactions
+            if self.wallet.last_stealth_height == -1 and self.last_stealth_height > stealth.GENESIS:
+                self.wallet.last_stealth_height = self.last_stealth_height
+                self.wallet.save_last_stealth_height(self.last_stealth_height)
             if self.wallet.last_stealth_height < self.last_stealth_height \
-                and not self.is_stealth_fetching:
+                and not self.is_stealth_fetching \
+                and self.wallet.last_stealth_height != -1:
                 print_error("stealth catching from block", self.wallet.last_stealth_height)
                 print_error("stealth catching", self.last_stealth_height, self.is_stealth_fetching)
                 self.is_stealth_fetching = True

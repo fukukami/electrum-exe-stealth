@@ -1629,7 +1629,7 @@ class OldWallet(Deterministic_Wallet):
 
 
 class StealthOldWallet(OldWallet):
-    def __init__(self, storage):
+    def __init__(self, storage, restore=False):
         self.storage = storage
         self.electrum_version = ELECTRUM_VERSION
         self.gap_limit_for_change = 3 # constant
@@ -1652,7 +1652,10 @@ class StealthOldWallet(OldWallet):
 
         self.next_addresses = storage.get('next_addresses',{})
 
-        self.last_stealth_height = storage.get('last_stealth_height', stealth.GENESIS)
+        if restore:
+            self.last_stealth_height = storage.get('last_stealth_height', stealth.GENESIS)
+        else:
+            self.last_stealth_height = -1
 
         # This attribute is set when wallet.start_threads is called.
         self.synchronizer = None
@@ -1882,6 +1885,8 @@ class StealthOldWallet(OldWallet):
             return True
         for a in self.accounts:
             if (type(a) is str) and ('s/' in a):
+                if address in self.accounts[a].get_stealth_addresses():
+                    return True
                 ac = self.accounts[a]
                 if address in ac.get_stealth_addresses():
                     return True
@@ -2004,7 +2009,7 @@ class Wallet(object):
             klass = StealthOldWallet
         elif is_new_seed(seed):
             klass = NewWallet
-        w = klass(storage)
+        w = klass(storage, restore=True)
         return w
 
     @classmethod
