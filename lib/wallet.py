@@ -1629,7 +1629,7 @@ class OldWallet(Deterministic_Wallet):
 
 
 class StealthOldWallet(OldWallet):
-    def __init__(self, storage, restore=False):
+    def __init__(self, storage, create=False):
         self.storage = storage
         self.electrum_version = ELECTRUM_VERSION
         self.gap_limit_for_change = 3 # constant
@@ -1652,12 +1652,13 @@ class StealthOldWallet(OldWallet):
 
         self.next_addresses = storage.get('next_addresses',{})
 
-        if restore:
-            self.last_stealth_height = storage.get('last_stealth_height', stealth.GENESIS)
-        else:
+        if create:
             self.last_stealth_height = -1
+        else:
+            self.last_stealth_height = storage.get('last_stealth_height', stealth.GENESIS)
 
         # This attribute is set when wallet.start_threads is called.
+
         self.synchronizer = None
 
         self.load_accounts()
@@ -1916,8 +1917,7 @@ class StealthOldWallet(OldWallet):
 
 # former WalletFactory
 class Wallet(object):
-
-    def __new__(self, storage):
+    def __new__(self, storage, create=False):
         config = storage.config
         if config.get('bitkey', False):
             # if user requested support for Bitkey device,
@@ -1944,7 +1944,7 @@ class Wallet(object):
 
         if seed_version == OLD_SEED_VERSION:
             # return OldWallet(storage)
-            return StealthOldWallet(storage)
+            return StealthOldWallet(storage, create=create)
         elif seed_version == NEW_SEED_VERSION:
             return NewWallet(storage)
         else:
@@ -2009,7 +2009,7 @@ class Wallet(object):
             klass = StealthOldWallet
         elif is_new_seed(seed):
             klass = NewWallet
-        w = klass(storage, restore=True)
+        w = klass(storage)
         return w
 
     @classmethod

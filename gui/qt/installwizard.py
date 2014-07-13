@@ -401,7 +401,7 @@ class InstallWizard(QDialog):
             
         if action == 'create':
             if t == 'standard':
-                wallet = Wallet(self.storage)
+                wallet = Wallet(self.storage, create=True)
 
             elif t == '2fa':
                 wallet = Wallet_2of3(self.storage)

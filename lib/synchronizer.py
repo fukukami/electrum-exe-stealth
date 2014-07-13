@@ -112,8 +112,8 @@ class WalletSynchronizer(threading.Thread):
 
             # request missing stealth transactions
             if self.wallet.last_stealth_height == -1 and self.last_stealth_height > stealth.GENESIS:
-                self.wallet.last_stealth_height = self.last_stealth_height
                 self.wallet.save_last_stealth_height(self.last_stealth_height)
+                print "updating last_stealth_height", self.last_stealth_height, self.wallet.last_stealth_height
             if self.wallet.last_stealth_height < self.last_stealth_height \
                 and not self.is_stealth_fetching \
                 and self.wallet.last_stealth_height != -1:
@@ -212,6 +212,8 @@ class WalletSynchronizer(threading.Thread):
 
             elif method == 'blockchain.stealth.subscribe':
                 self.last_stealth_height = result[0]['height']
+                print_error("last stealth height", self.last_stealth_height)
+                print_error("wallet last stealth height", self.wallet.last_stealth_height)
                 self.was_updated = True
 
             elif method == 'blockchain.transaction.get':
