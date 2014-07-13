@@ -114,6 +114,7 @@ class WalletSynchronizer(threading.Thread):
             if self.wallet.last_stealth_height < self.last_stealth_height \
                 and not self.is_stealth_fetching:
                 print_error("stealth catching from block", self.wallet.last_stealth_height)
+                print_error("stealth catching", self.last_stealth_height, self.is_stealth_fetching)
                 self.is_stealth_fetching = True
                 self.stealth_fetch(self.wallet.last_stealth_height)
 
@@ -195,6 +196,9 @@ class WalletSynchronizer(threading.Thread):
             elif method == 'blockchain.stealth.fetch':
                 sx_list = sorted(result, key=lambda k: k['height'])
                 self.wallet.receive_stealth_history_callback(sx_list)
+                for tx in sx_list:
+                    tx_hash, tx_height = tx['txid'], tx['height']
+                    missing_tx.append((tx_hash, tx_height))
                 if len(sx_list) > 0:
                     last_height = sx_list[-1].get('height', stealth.GENESIS)
                     print_error("sync saving last height", last_height, sx_list[-1])
@@ -203,7 +207,6 @@ class WalletSynchronizer(threading.Thread):
                 self.is_stealth_fetching = False
 
             elif method == 'blockchain.stealth.subscribe':
-                self.wallet.receive_stealth_history_callback(result)
                 self.last_stealth_height = result[0]['height']
                 self.was_updated = True
 
@@ -223,6 +226,6 @@ class WalletSynchronizer(threading.Thread):
             if self.was_updated and not requested_tx:
                 self.network.trigger_callback('updated')
                 # Updated gets called too many times from other places as well; if we use that signal we get the notification three times
-                self.network.trigger_callback("new_transaction") 
+                self.network.trigger_callback("new_transaction")
                 self.was_updated = False
 
