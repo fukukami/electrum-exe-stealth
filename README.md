@@ -14,6 +14,11 @@ To run Electrum from this directory, just do:
 
     ./electrum-exe
 
+If you are on Ubuntu, install required libraries:
+
+    sudo apt-get install python-dev
+    sudo apt-get install python-pbkdf2
+
 If you install Electrum on your system, you can run it from any
 directory:
 
