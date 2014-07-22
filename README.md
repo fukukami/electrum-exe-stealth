@@ -4,7 +4,7 @@ Licence: GNU GPL v3
 Author: Thomas Voegtlin  
 Contributors: pooler, wozz, fukukami  
 Language: Python  
-Homepage: https://electrum-exe.org/  
+Homepage: https://electrum-exe.org/stealth/  
 
 
 1. GETTING STARTED
@@ -106,3 +106,15 @@ You have 3 installation options:
     
     Then you can compile PyQt4 from source.  
     Detailed instructions can be found in [PyQt4 installation guide](http://pyqt.sourceforge.net/Docs/PyQt4/installation.html)
+    
+When dependencies are ready, install like in section `1. GETTING STARTED`:
+
+    python setup.py install
+    electrum-exe
+    
+    
+4. TROUBLESHOOTING AND BUG REPORTING
+------------------------------------
+To see the log, run Electrum with -v option:
+
+    electrum-exe -v
