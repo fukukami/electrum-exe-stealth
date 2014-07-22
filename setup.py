@@ -82,6 +82,8 @@ setup(
         'electrum_exe.simple_config',
         'electrum_exe.socks',
         'electrum_exe.synchronizer',
+        'electrum_exe.keys',
+        'electrum_exe.stealth',
         'electrum_exe.transaction',
         'electrum_exe.util',
         'electrum_exe.verifier',

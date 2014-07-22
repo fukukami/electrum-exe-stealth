@@ -29,7 +29,6 @@
 # THE SOFTWARE.
 
 import hashlib, re, sys, os, base64, time, random, hmac
-import ripemd
 
 ### Elliptic curve parameters (secp256k1)
 
@@ -311,6 +310,7 @@ def bin_hash160(string):
    try:
        digest = hashlib.new('ripemd160',intermed).digest()
    except:
+       import ripemd
        digest = ripemd.RIPEMD160(intermed).digest()
    return digest
 def hash160(string):
